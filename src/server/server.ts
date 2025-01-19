@@ -1,3 +1,4 @@
+import { roleRoutes } from "@routes";
 import express, { Application } from "express";
 import morgan from "morgan";
 
@@ -8,8 +9,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 const v1Api: string = "/api/v1";
-app.use(`${v1Api}`, (_req, res) => {
-  res.send("<h1>API Healthy! :)</h1>");
-});
+app.use(`${v1Api}`, roleRoutes());
 
 export default app;
