@@ -109,8 +109,7 @@ const loginUser = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    const { id, firstName, lastName } = userExists;
-    const token = createToken({ id, firstName, lastName, email: userExists.email });
+    const token = createToken({ id: userExists.id });
 
     res.status(200).json({
       status: ServerStatusMessage.OK,
