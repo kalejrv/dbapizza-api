@@ -1,14 +1,14 @@
+import { Document } from "mongoose";
 import { Query, Repository } from "./repositoryTypes";
-import { Role } from "./roleTypes";
 
-export interface User {
+export interface User extends Document {
   firstName: string;
   lastName: string;
   address: string;
   phone: string;
   email: string;
   password: string;
-  role: Role;
+  role: object;
   hashPassword(password: string): Promise<string>;
   comparePassword(password: string): Promise<boolean>;
 };
