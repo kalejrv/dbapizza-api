@@ -1,4 +1,4 @@
-import "module-alias/register";
+// import "module-alias/register";
 import dbConnection from "@config/mongodb";
 import app from "@server/server";
 import dotenv from "dotenv";
