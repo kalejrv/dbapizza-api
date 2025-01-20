@@ -16,7 +16,10 @@ export class RoleRepository implements IRoleRepository {
   };
 
   async findOne(query: Query): Promise<Role | null> {
-    return await RoleModel.findOne(query).exec();
+    return await RoleModel
+      .findOne(query)
+      .select("-createdAt -updatedAt")
+      .exec();
   };
 
   async update(id: string, data: Partial<Role>): Promise<Role | null> {

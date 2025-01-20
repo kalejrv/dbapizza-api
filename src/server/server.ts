@@ -1,4 +1,4 @@
-import { roleRoutes, userRoutes } from "@routes";
+import { authRouter, roleRoutes, userRoutes } from "@routes";
 import express, { Application } from "express";
 import morgan from "morgan";
 
@@ -9,6 +9,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 const v1Api: string = "/api/v1";
-app.use(`${v1Api}`, roleRoutes(), userRoutes());
+app.use(`${v1Api}`, authRouter(), roleRoutes(), userRoutes());
 
 export default app;
