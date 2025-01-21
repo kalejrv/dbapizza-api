@@ -12,7 +12,7 @@ export const checkUserPermissions = (req: Request, res: Response, next: NextFunc
     findPermission?.permissions.push(permissionPath);
   };
 
-  const rolePermissions = userAuth.role?.permissions;
+  const rolePermissions = userAuth.role.permissions;
   const permissionsGranted = findPermission?.permissions.find(permission => rolePermissions.includes(permission))
 
   try {
