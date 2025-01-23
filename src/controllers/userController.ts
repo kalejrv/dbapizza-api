@@ -1,3 +1,4 @@
+import { usersPagination } from "@helpers";
 import { UserRepository } from "@repositories";
 import { UserService } from "@services";
 import { IUserRepository, IUserService, ServerStatusMessage, User } from "@types";
@@ -7,9 +8,36 @@ import { Request, Response } from "express";
 const userRepository: IUserRepository = new UserRepository();
 const userService: IUserService = new UserService(userRepository);
 
-const findUsers = async (_req: Request, res: Response): Promise<void> => {
+const findUsers = async (req: Request, res: Response): Promise<void> => {
+  const { query } = req;
+
+  const page: number = Number(query.page);
+  const limit: number = Number(query.limit);
+  const skip: number = (page - 1) * limit;
+
   try {
-    const users = await userService.findUsers();
+    if (Object.values(query).length === 0) {
+      const users = await userService.findUsers();
+  
+      if (users.length === 0) {
+        res.status(200).json({
+          status: ServerStatusMessage.OK,
+          msg: "No users found.",
+        });
+  
+        return;
+      };
+  
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
+        data: users,
+      });
+
+      return;
+    };
+    
+    const usersPaginated = await usersPagination(skip, limit)
+    const { users, totalPages, totalUsers } = usersPaginated;
 
     if (users.length === 0) {
       res.status(200).json({
@@ -22,7 +50,11 @@ const findUsers = async (_req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({
       status: ServerStatusMessage.OK,
-      data: users,
+      data: {
+        users,
+        totalPages,
+        totalUsers,
+      },
     });
   } catch (error: any) {
     console.log("Error: ", error.message);
