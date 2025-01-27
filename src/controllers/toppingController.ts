@@ -1,3 +1,4 @@
+import { toppingsPagination } from "@helpers";
 import { ToppingRepository } from "@repositories";
 import { ToppingService } from "@services";
 import { IToppingRepository, IToppingService, ServerStatusMessage, Topping } from "@types";
@@ -7,9 +8,37 @@ import { Request, Response } from "express";
 const toppingRepository: IToppingRepository = new ToppingRepository();
 const toppingService: IToppingService = new ToppingService(toppingRepository);
 
-const findToppings = async (_req: Request, res: Response): Promise<void> => {
+const findToppings = async (req: Request, res: Response): Promise<void> => {
+  const { query } = req;
+
+  const page: number = Number(query.page);
+  const limit: number = Number(query.limit);
+  const skip: number = (page - 1) * limit;
+
   try {
-    const toppings = await toppingService.findToppings();
+    if (Object.values(query).length === 0) {
+      const toppings = await toppingService.findToppings();
+      
+      if (toppings.length === 0) {
+        res.status(404).json({
+          status: ServerStatusMessage.NOT_FOUND,
+          msg: "No topping found.",
+        });
+  
+        return;
+      };
+
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
+        data: toppings,
+      });
+
+      return;
+    };
+
+    const toppingsPaginated = await toppingsPagination(skip, limit);
+    const { toppings, totalPages, totalToppings } = toppingsPaginated;
+
     if (toppings.length === 0) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
@@ -21,7 +50,11 @@ const findToppings = async (_req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({
       status: ServerStatusMessage.OK,
-      data: toppings,
+      data: {
+        toppings,
+        totalToppings,
+        totalPages,
+      },
     });
   } catch (error: any) {
     console.log("Error: ", error.message);
