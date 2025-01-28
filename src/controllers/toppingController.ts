@@ -12,8 +12,8 @@ const findToppings = async (req: Request, res: Response): Promise<void> => {
   const { query } = req;
 
   const page: number = Number(query.page);
-  const limit: number = Number(query.limit);
-  const skip: number = (page - 1) * limit;
+  const limit: number = Number(query.limit) || 10;
+  const skip: number = (page - 1) * limit || 0;
 
   try {
     if (Object.values(query).length === 0) {

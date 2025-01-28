@@ -1,6 +1,20 @@
 import { Topping } from "@types";
 import mongoose, { Schema } from "mongoose";
 
+/**
+* @openapi
+* components:
+*   schemas:
+*     Topping:
+*       type: object
+*       properties:
+*         name: 
+*           type: string
+*           example: Mushrooms
+*         price:
+*           type: number
+*           example: 20
+*/
 const ToppingSchema: Schema = new Schema<Topping>({
   name: {
     type: String,
