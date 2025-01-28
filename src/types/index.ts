@@ -5,3 +5,4 @@ export * from "./userTypes";
 export * from "./permissionsTypes";
 export * from "./FlavorTypes";
 export * from "./ToppingTypes";
+export * from "./sizeTypes";

@@ -1,4 +1,4 @@
-import { authRouter, flavorRoutes, roleRoutes, toppingRoutes, userRoutes } from "@routes";
+import { authRouter, flavorRoutes, roleRoutes, sizeRoutes, toppingRoutes, userRoutes } from "@routes";
 import express, { Application } from "express";
 import morgan from "morgan";
 
@@ -15,6 +15,7 @@ app.use(`${v1Api}`,
   userRoutes(),
   flavorRoutes(),
   toppingRoutes(),
+  sizeRoutes(),
 );
 
 export default app;
