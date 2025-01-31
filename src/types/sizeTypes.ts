@@ -7,6 +7,7 @@ export enum SizeOption {
 };
 
 export interface Size {
+  _id: object,
   name: SizeOption,
   price: number,
 };

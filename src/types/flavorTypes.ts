@@ -1,6 +1,7 @@
 import { Query, Repository } from "./repositoryTypes";
 
 export interface Flavor {
+  _id: object,
   name: string;
   description: string;
   price: number;

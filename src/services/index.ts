@@ -3,3 +3,4 @@ export * from "./userService";
 export * from "./flavorService";
 export * from "./toppingService";
 export * from "./sizeService";
+export * from "./pizzaService";
