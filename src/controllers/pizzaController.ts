@@ -1,8 +1,8 @@
-import { deletePizzaImage, renamePizzaImage } from "@helpers";
+import { deletePizzaImage, pizzasPagination, renamePizzaImage } from "@helpers";
 import { FlavorRepository, PizzaRepository, SizeRepository } from "@repositories";
 import { FlavorService, PizzaService, SizeService } from "@services";
 import { IFlavorRepository, IFlavorService, IPizzaRepository, IPizzaService, ISizeRepository, ISizeService, Pizza, ServerStatusMessage } from "@types";
-import { isAValidId } from "@utils";
+import { isAValidId, isAValidNumber } from "@utils";
 import { Request, Response } from "express";
 
 const pizzaRepository: IPizzaRepository = new PizzaRepository();
@@ -14,10 +14,64 @@ const flavorService: IFlavorService = new FlavorService(flavorRepository);
 const sizeRepository: ISizeRepository = new SizeRepository();
 const sizeService: ISizeService = new SizeService(sizeRepository);
 
-const findPizzas = async (_req: Request, res: Response): Promise<void> => {
+const findPizzas = async (req: Request, res: Response): Promise<void> => {
+  const { query } = req;
+
   try {
-    const pizzas = await pizzaService.findPizzas();
+    if (Object.values(query).length === 0) {
+      const pizzas = await pizzaService.findPizzas();
+      if (pizzas.length === 0) {
+        res.status(404).json({
+          status: ServerStatusMessage.NOT_FOUND,
+          msg: "No pizza found.",
+        });
     
+        return;
+      };
+    
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
+        data: {
+          pizzas,
+          totalPizzas: pizzas.length,
+          pizzasByPage: pizzas.length,
+          currentPizzasQuantity: pizzas.length,
+          currentPage: 1,
+          totalPages: 1,
+        },
+      });
+
+      return;
+    };
+
+    const pageIsAValidNumber: boolean = isAValidNumber(query.page as string);
+    const limitIsAValidNumber: boolean = isAValidNumber(query.limit as string);
+
+    if (!pageIsAValidNumber || !limitIsAValidNumber) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "Page and Limit values can not to be diferent of a valid number.",
+      });
+
+      return;
+    };
+
+    const page: number = Number(query.page);
+    const limit: number = Number(query.limit);
+    const skip: number = (page - 1) * limit;
+
+    if ((page === 0) || (limit === 0)) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "Page and Limit values can no to be equal to zero.",
+      });
+
+      return;
+    };
+
+    const paginatedPizzas = await pizzasPagination({ skip, limit, page });
+    const { pizzas, totalPizzas, totalPages, currentPage, pizzasByPage, currentPizzasQuantity } = paginatedPizzas;
+
     if (pizzas.length === 0) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
@@ -26,10 +80,17 @@ const findPizzas = async (_req: Request, res: Response): Promise<void> => {
   
       return;
     };
-  
+    
     res.status(200).json({
       status: ServerStatusMessage.OK,
-      data: pizzas,
+      data: {
+        pizzas,
+        totalPizzas,
+        pizzasByPage,
+        currentPizzasQuantity,
+        currentPage,
+        totalPages,
+      },
     });
   } catch (error: any) {
     console.log("Error: ", error.message);
