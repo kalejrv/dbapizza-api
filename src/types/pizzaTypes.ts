@@ -6,9 +6,9 @@ export interface Pizza {
   flavor: Flavor;
   size: Size;
   image: string;
-}
+};
 
-export interface IPizzaRepository extends Repository<Pizza> {}
+export interface IPizzaRepository extends Repository<Pizza> { };
 
 export interface IPizzaService {
   createPizza(pizza: Pizza): Promise<Pizza>;
@@ -17,4 +17,4 @@ export interface IPizzaService {
   findPizzaById(id: string): Promise<Pizza | null>;
   updatePizza(id: string, Pizza: Partial<Pizza>): Promise<Pizza | null>;
   deletePizza(id: string): Promise<boolean>;
-}
+};
