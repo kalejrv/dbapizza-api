@@ -10,7 +10,7 @@ export const renamePizzaImage = (file: File , pizzaFlavor: string, pizzaSize: st
   const fileName: string = `pizza_${pizzaFlavor}_${pizzaSize}_${Date.now()}${fileExtension}`.toLowerCase();
   
   const oldPath: string = file!.path;
-  const newPath: string = `uploads/pizzas/${fileName}`;
+  const newPath: string = `uploads/pizzas/${fileName.replace(" ", "_")}`;
   
   fs.renameSync(oldPath, newPath);
 
