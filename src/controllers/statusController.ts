@@ -122,7 +122,7 @@ const createStatus = async (req: Request, res: Response): Promise<void> => {
 
     res.status(201).json({
       stauts: ServerStatusMessage.CREATED,
-      msg: "New status created.",
+      msg: "Status created successfully.",
       data: status,
     });
   } catch (error: any) {
