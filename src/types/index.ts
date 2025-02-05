@@ -8,3 +8,4 @@ export * from "./toppingTypes";
 export * from "./sizeTypes";
 export * from "./pizzaTypes";
 export * from "./paginationTypes";
+export * from "./statusTypes";
