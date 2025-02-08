@@ -8,6 +8,8 @@ export interface Pizza {
   image: string;
 };
 
+export type PizzaWithPrice = Pizza & { price: number };
+
 export interface IPizzaRepository extends Repository<Pizza> { };
 
 export interface IPizzaService {
