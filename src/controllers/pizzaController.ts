@@ -1,4 +1,4 @@
-import { deletePizzaImage, pizzasPagination, renamePizzaImage } from "@helpers";
+import { deletePizzaImage, pizzasPagination, pizzasWithPrice, pizzaWithPrice, renamePizzaImage } from "@helpers";
 import { FlavorRepository, PizzaRepository, SizeRepository } from "@repositories";
 import { FlavorService, PizzaService, SizeService } from "@services";
 import { IFlavorRepository, IFlavorService, IPizzaRepository, IPizzaService, ISizeRepository, ISizeService, Pizza, ServerStatusMessage } from "@types";
@@ -28,11 +28,11 @@ const findPizzas = async (req: Request, res: Response): Promise<void> => {
     
         return;
       };
-    
+
       res.status(200).json({
         status: ServerStatusMessage.OK,
         data: {
-          pizzas,
+          pizzas: pizzasWithPrice(pizzas),
           totalPizzas: pizzas.length,
           pizzasByPage: pizzas.length,
           currentPizzasQuantity: pizzas.length,
@@ -80,11 +80,11 @@ const findPizzas = async (req: Request, res: Response): Promise<void> => {
   
       return;
     };
-    
+
     res.status(200).json({
       status: ServerStatusMessage.OK,
       data: {
-        pizzas,
+        pizzas: pizzasWithPrice(pizzas),
         totalPizzas,
         pizzasByPage,
         currentPizzasQuantity,
@@ -127,7 +127,7 @@ const findPizzaById = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({
       status: ServerStatusMessage.OK,
-      data: pizza,
+      data: pizzaWithPrice(pizza),
     });
   } catch (error: any) {
     console.log("Error: ", error.message);

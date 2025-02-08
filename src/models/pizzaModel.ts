@@ -15,7 +15,7 @@ import mongoose, { Schema, Types } from "mongoose";
 *           type: string
 *           example: 679488d052da6f6ec1998cc3
 *         image:
-*           type: number
+*           type: string
 *           example: image.jpg
 */
 const PizzaSchema: Schema = new Schema<Pizza>({
