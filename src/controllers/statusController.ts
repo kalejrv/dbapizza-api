@@ -94,10 +94,11 @@ const createStatus = async (req: Request, res: Response): Promise<void> => {
     return;
   };
 
+  const statusOptions: string = Object.values(StatusOption).reduce((prev, curr) => prev += curr + ", ", "");
   if (!Object.values(StatusOption).includes(name as StatusOption)) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: `Status name must to be: ${StatusOption.Pending}, ${StatusOption.InProgress} or ${StatusOption.Done}.`,
+      msg: `Status name must to be: ${statusOptions.slice(0, statusOptions.length - 2)}.`,
     });
 
     return;

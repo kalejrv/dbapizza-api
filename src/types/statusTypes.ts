@@ -4,6 +4,7 @@ export enum StatusOption {
   Pending = "Pending",
   InProgress = "In progress",
   Done = "Done",
+  Cancelled = "Cancelled",
 };
 
 export interface Status {
