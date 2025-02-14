@@ -7,3 +7,4 @@ export * from "./pizzasWithPrice";
 export * from "./pizzaWithPrice";
 export * from "./formatOrderItems";
 export * from "./calculateTotalOrder";
+export * from "./ordersPagination";
