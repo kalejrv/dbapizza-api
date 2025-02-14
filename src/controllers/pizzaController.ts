@@ -299,7 +299,7 @@ const deletePizza = async (req: Request, res: Response): Promise<void> => {
 
     const pizzaImagePath: string = `uploads/pizzas/${pizzaExists.image}`;
     deletePizzaImage(pizzaImagePath);
-    pizzaService.deletePizza(id);
+    await pizzaService.deletePizza(id);
 
     res.status(200).json({
       status: ServerStatusMessage.OK,

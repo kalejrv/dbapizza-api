@@ -9,3 +9,4 @@ export * from "./sizeTypes";
 export * from "./pizzaTypes";
 export * from "./paginationTypes";
 export * from "./statusTypes";
+export * from "./orderTypes";

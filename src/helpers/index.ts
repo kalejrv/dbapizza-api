@@ -5,3 +5,5 @@ export * from "./deletePizzaImage";
 export * from "./pizzasPagination";
 export * from "./pizzasWithPrice";
 export * from "./pizzaWithPrice";
+export * from "./formatOrderItems";
+export * from "./calculateTotalOrder";
