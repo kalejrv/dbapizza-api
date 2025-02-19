@@ -66,6 +66,68 @@ const OrderItemSchema: Schema = new Schema<OrderItem>({
   },
 });
 
+/**
+* @openapi
+* components:
+*   schemas:
+*     Order:
+*       type: object
+*       properties:
+*         user:
+*           type: object
+*           properties:
+*             firstName:
+*               type: string
+*               example: Kevin
+*             lastName:
+*               type: string
+*               example: Reyes
+*             address:
+*               type: string
+*               example: 23th street "Las praderas", Managua, Nicaragua
+*             phone:
+*               type: string
+*               example: 5555 5555
+*             email:
+*               type: string
+*               example: kevin@correo.com
+*         items:
+*           type: array
+*           items:
+*             type: object
+*             properties:
+*               pizzaDetail:
+*                 type: object
+*                 properties:
+*                   pizza:
+*                     type: string
+*                     example: 679c57cd105154cb855d7fd3
+*                   pizzaTotalPrice:
+*                     type: number
+*                     example: 280
+*               toppingsDetail:
+*                 type: object
+*                 properties:
+*                   toppings:
+*                     type: array
+*                     items:
+*                       type: string
+*                       example: 6798077e96d97dd292904d2d
+*                   toppingsTotalPrice:
+*                     type: number
+*                     example: 220
+*               quantity:
+*                 type: number
+*                 example: 1
+*               total:
+*                 type: number
+*                 example: 850
+*         status:
+*           $ref: "#/components/schemas/Status"
+*         total:
+*           type: number
+*           example: 1250
+*/
 const OrderSchema: Schema = new Schema<Order>({
   user: {
     type: OrderUserSchema,
