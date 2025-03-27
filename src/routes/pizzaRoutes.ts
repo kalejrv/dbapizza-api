@@ -14,8 +14,6 @@ export const pizzaRoutes = () => {
 *     description: This endpoint allow to show all pizzas records.
 *     tags:
 *       - Pizzas
-*     security:
-*       - BearerAuth: []
 *     parameters:
 *       - name: page
 *         in: query
@@ -101,7 +99,7 @@ export const pizzaRoutes = () => {
 *                 error:
 *                   type: object
 */
-  router.get(`${basePath}`, verifyUserAuth, checkUserPermissions, findPizzas);
+  router.get(`${basePath}`, findPizzas);
 
   /**
 * @openapi

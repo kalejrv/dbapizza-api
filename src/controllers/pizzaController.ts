@@ -153,8 +153,8 @@ const createPizza = async (req: Request, res: Response): Promise<void> => {
     };
   };
 
-  const { flavor, size } = newPizza;
-  if (!flavor || !size || !file) {
+  const { flavor } = newPizza;
+  if (!flavor || !file) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
       msg: "All fields are required.",
@@ -164,11 +164,8 @@ const createPizza = async (req: Request, res: Response): Promise<void> => {
   };
 
   const flavorIdOfNewPizza = String(flavor);
-  const sizeIdOfNewPizza = String(size);
-
   const flavorIdIsAValidId = isAValidId(flavorIdOfNewPizza);
-  const sizeIdIsAValidId = isAValidId(sizeIdOfNewPizza);
-  if (!flavorIdIsAValidId || !sizeIdIsAValidId) {
+  if (!flavorIdIsAValidId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
       msg: "Flavor and Size id's must to be a valid id.",
@@ -179,7 +176,7 @@ const createPizza = async (req: Request, res: Response): Promise<void> => {
 
   try {
     const flavorExists = await flavorService.findFlavorById(flavorIdOfNewPizza);
-    const sizeExists = await sizeService.findSizeById(sizeIdOfNewPizza);
+    const sizeExists = await sizeService.findSizeByName("Personal");
     if (!flavorExists || !sizeExists) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
@@ -198,14 +195,14 @@ const createPizza = async (req: Request, res: Response): Promise<void> => {
     if (pizzaExists) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: `Already exists a pizza with ${flavorExists?.name} flavor and ${sizeExists?.name} size.`,
+        msg: `Already exists a pizza with ${flavorExists?.name} flavor.`,
       });
       deletePizzaImage(file.path);
       
       return;
     };
 
-    const pizzaImageName: string = renamePizzaImage(file, flavorExists.name, sizeExists.name);
+    const pizzaImageName: string = renamePizzaImage(file, flavorExists.name);
     const pizzaCreated = await pizzaService.createPizza({
       ...newPizza,
       flavor: flavorExists,
@@ -251,11 +248,11 @@ const updatePizza = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    const { flavor, size, image } = pizzaExists;
+    const { flavor, image } = pizzaExists;
     const pizzaImagePath: string = `uploads/pizzas/${image}`;
     deletePizzaImage(pizzaImagePath);
 
-    const newPizzaImageName: string = renamePizzaImage(file, flavor.name, size.name);
+    const newPizzaImageName: string = renamePizzaImage(file, flavor.name);
     const updates = { image: newPizzaImageName };
     const pizzaUpdated = await pizzaService.updatePizza(id, updates);
     
