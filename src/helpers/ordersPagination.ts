@@ -14,7 +14,7 @@ export const ordersPagination = async (paginationData: PaginationData) => {
       .find({})
       .select("-createdAt -updatedAt")
       .populate("status", "-_id -createdAt -updatedAt")
-      .populate("items.pizzaDetail.pizza", "-_id -createdAt -updatedAt")
+      .populate("items.pizza", "-_id -createdAt -updatedAt")
       .populate("items.toppingsDetail.toppings", "-_id -createdAt -updatedAt")
       .skip(skip)
       .limit(limit)

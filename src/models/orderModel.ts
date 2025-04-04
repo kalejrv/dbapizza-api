@@ -1,4 +1,4 @@
-import { Order, OrderItem, OrderUser, PizzaDetail, ToppingsDetail } from "@types";
+import { Order, OrderItem, OrderUser, ToppingsDetail } from "@types";
 import mongoose, { Schema, Types } from "mongoose";
 
 const OrderUserSchema: Schema = new Schema<OrderUser>({
@@ -24,18 +24,6 @@ const OrderUserSchema: Schema = new Schema<OrderUser>({
   },
 });
 
-const PizzaDetailSchema: Schema = new Schema<PizzaDetail>({
-  pizza: {
-    type: Types.ObjectId,
-    ref: "Pizzas",
-    required: true,
-  },
-  pizzaTotalPrice: {
-    type: Number,
-    required: true,
-  },
-});
-
 const ToppingsDetailSchema: Schema = new Schema<ToppingsDetail>({
   toppings: [{
     type: Types.ObjectId,
@@ -48,8 +36,9 @@ const ToppingsDetailSchema: Schema = new Schema<ToppingsDetail>({
 });
 
 const OrderItemSchema: Schema = new Schema<OrderItem>({
-  pizzaDetail: {
-    type: PizzaDetailSchema,
+  pizza: {
+    type: Types.ObjectId,
+    ref: "Pizzas",
     required: true,
   },
   toppingsDetail: {
@@ -96,15 +85,10 @@ const OrderItemSchema: Schema = new Schema<OrderItem>({
 *           items:
 *             type: object
 *             properties:
-*               pizzaDetail:
-*                 type: object
-*                 properties:
-*                   pizza:
-*                     type: string
-*                     example: 679c57cd105154cb855d7fd3
-*                   pizzaTotalPrice:
-*                     type: number
-*                     example: 280
+*               pizza:
+*                 type: string
+*                 example: 679c57cd105154cb855d7fd3
+*                 Description: "A pizza id."
 *               toppingsDetail:
 *                 type: object
 *                 properties:
@@ -113,6 +97,7 @@ const OrderItemSchema: Schema = new Schema<OrderItem>({
 *                     items:
 *                       type: string
 *                       example: 6798077e96d97dd292904d2d
+*                       Description: "A topping id."
 *                   toppingsTotalPrice:
 *                     type: number
 *                     example: 220

@@ -12,7 +12,7 @@ export class OrderRepository implements IOrderRepository {
       .find(query || {})
       .select("-createdAt -updatedAt")
       .populate("status", "-_id -createdAt -updatedAt")
-      .populate("items.pizzaDetail.pizza", "-_id -createdAt -updatedAt")
+      .populate("items.pizza", "-_id -createdAt -updatedAt")
       .populate("items.toppingsDetail.toppings", "-_id -createdAt -updatedAt")
       .exec();
     };
@@ -22,7 +22,7 @@ export class OrderRepository implements IOrderRepository {
       .findById(id)
       .select("-createdAt -updatedAt")
       .populate("status", "-_id -createdAt -updatedAt")
-      .populate("items.pizzaDetail.pizza", "-_id -createdAt -updatedAt")
+      .populate("items.pizza", "-_id -createdAt -updatedAt")
       .populate("items.toppingsDetail.toppings", "-_id -createdAt -updatedAt")
       .exec();
   };
@@ -31,7 +31,7 @@ export class OrderRepository implements IOrderRepository {
     return await OrderModel
       .findOne(query)
       .populate("status")
-      .populate("items.pizzaDetail.pizza")
+      .populate("items.pizza")
       .populate("items.toppingsDetail.toppings")
       .exec();
   };
@@ -41,7 +41,7 @@ export class OrderRepository implements IOrderRepository {
       .findByIdAndUpdate(id, data, { new: true })
       .select("-createdAt -updatedAt")
       .populate("status", "-_id -createdAt -updatedAt")
-      .populate("items.pizzaDetail.pizza", "-_id -createdAt -updatedAt")
+      .populate("items.pizza", "-_id -createdAt -updatedAt")
       .populate("items.toppingsDetail.toppings", "-_id -createdAt -updatedAt")
       .exec();
   };

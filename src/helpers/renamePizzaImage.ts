@@ -7,10 +7,13 @@ type File = req["file"];
 
 export const renamePizzaImage = (file: File , pizzaFlavor: string): string => {
   const fileExtension: string = extname(file!.originalname);
-  const fileName: string = `${pizzaFlavor}_pizza_${Date.now()}${fileExtension}`.toLowerCase();
+  let fileName: string = `${pizzaFlavor}_pizza_${Date.now()}${fileExtension}`.toLowerCase();
   
+  const regex: RegExp = / /gi;
+  fileName = fileName.replace(regex, "_");
+
   const oldPath: string = file!.path;
-  const newPath: string = `uploads/pizzas/${fileName.replace(" ", "_")}`;
+  const newPath: string = `uploads/pizzas/${fileName}`;
   
   fs.renameSync(oldPath, newPath);
 

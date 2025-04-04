@@ -1,7 +1,7 @@
 import { calculateTotalOrder, formatOrderItems, ordersPagination } from "@helpers";
 import { OrderRepository, StatusRepository } from "@repositories";
 import { OrderService, StatusService } from "@services";
-import { IOrderRepository, IOrderService, IStatusRepository, IStatusService, Order, OrderItem, OrderItemFromBodyRequest, ServerStatusMessage, Status, StatusOption } from "@types";
+import { IOrderRepository, IOrderService, IStatusRepository, IStatusService, Order, OrderItem, OrderItemFromRequest, ServerStatusMessage, Status, StatusOption } from "@types";
 import { isAValidId, isAValidNumber } from "@utils";
 import { Request, Response } from "express";
 
@@ -145,7 +145,7 @@ const findOrderById = async (req: Request, res: Response): Promise<void> => {
 const createOrder = async (req: Request, res: Response): Promise<void> => {
   const { userAuth, body } = req;
   const { firstName, lastName, address, phone, email } = userAuth;
-  const newOrder: OrderItemFromBodyRequest[] = body;
+  const newOrder: OrderItemFromRequest[] = body;
 
   if (Object.values(body).length === 0) {
     res.status(400).json({
@@ -155,6 +155,19 @@ const createOrder = async (req: Request, res: Response): Promise<void> => {
 
     return;
   };
+
+  for(const item of Object.values(body)) {
+    if (item && (typeof item == "object")) {
+      if (Object.keys(item).length === 0) {
+        res.status(400).json({
+          status: ServerStatusMessage.BAD_REQUEST,
+          msg: "Order item can not to be a empty value.",
+        });
+
+        return;
+      };
+    };
+  };
   
   try {
     const user = { firstName, lastName, address, phone, email };
@@ -162,7 +175,7 @@ const createOrder = async (req: Request, res: Response): Promise<void> => {
     const status = await statusService.findStatusByName("Pending") as Status;
     const total: number = calculateTotalOrder(items);
     const orderCreated: Order = await orderService.createOrder({ user, items, status, total });
-  
+
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
       msg: "Order created successfully.",
