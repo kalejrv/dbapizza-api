@@ -12,8 +12,8 @@ const findRoles = async (_req: Request, res: Response): Promise<void> => {
     const roles = await roleService.findRoles();
 
     if (roles.length === 0) {
-      res.status(200).json({
-        status: ServerStatusMessage.OK,
+      res.status(404).json({
+        status: ServerStatusMessage.NOT_FOUND,
         msg: "No roles found.",
       });
 
@@ -108,7 +108,7 @@ const createRole = async (req: Request, res: Response): Promise<void> => {
 
     res.status(201).json({
       stauts: ServerStatusMessage.CREATED,
-      msg: "New role created.",
+      msg: "Role created successfully.",
       role,
     });
   } catch (error: any) {
