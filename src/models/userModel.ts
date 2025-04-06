@@ -2,6 +2,37 @@ import { User } from "@types";
 import mongoose, { Schema, Types } from "mongoose";
 import bcrypt from "bcrypt";
 
+/**
+* @openapi
+* components:
+*   schemas:
+*     User:
+*       type: object
+*       properties:
+*         firstName: 
+*           type: string
+*           example: Kevin
+*         lastName:
+*           type: string
+*           example: Reyes
+*         address:
+*           type: string
+*           example: 2th Street Diriamba, Carazo.
+*         phone:
+*           type: string
+*           example: 55285577
+*         email:
+*           type: string
+*           example: kevin@correo.com
+*         password:
+*           type: string
+*           example: kevin123
+*           Description: A text plain that would be hashed in the db.
+*         role:
+*           type: string
+*           example: 6790766598c2b59111179ca9
+*           Description: A role id.
+*/
 const UserSchema: Schema = new Schema<User>({
   firstName: {
     type: String,

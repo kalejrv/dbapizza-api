@@ -2,7 +2,7 @@ import { usersPagination } from "@helpers";
 import { UserRepository } from "@repositories";
 import { UserService } from "@services";
 import { IUserRepository, IUserService, ServerStatusMessage, User } from "@types";
-import { isAValidId } from "@utils";
+import { isAValidId, isAValidNumber } from "@utils";
 import { Request, Response } from "express";
 
 const userRepository: IUserRepository = new UserRepository();
@@ -11,17 +11,12 @@ const userService: IUserService = new UserService(userRepository);
 const findUsers = async (req: Request, res: Response): Promise<void> => {
   const { query } = req;
 
-  const page: number = Number(query.page);
-  const limit: number = Number(query.limit);
-  const skip: number = (page - 1) * limit;
-
   try {
     if (Object.values(query).length === 0) {
       const users = await userService.findUsers();
-  
       if (users.length === 0) {
-        res.status(200).json({
-          status: ServerStatusMessage.OK,
+        res.status(404).json({
+          status: ServerStatusMessage.NOT_FOUND,
           msg: "No users found.",
         });
   
@@ -30,30 +25,70 @@ const findUsers = async (req: Request, res: Response): Promise<void> => {
   
       res.status(200).json({
         status: ServerStatusMessage.OK,
-        data: users,
+        data: {
+          users,
+          totalUsers: users.length,
+          usersByPage: users.length,
+          currentUsersQuantity: users.length,
+          currentPage: 1,
+          totalPages: 1,
+        },
       });
 
       return;
     };
-    
-    const usersPaginated = await usersPagination(skip, limit)
-    const { users, totalPages, totalUsers } = usersPaginated;
 
+    /* Validate that query object values are of type "number". */
+    const pageIsAValidNumber: boolean = isAValidNumber(query.page as string);
+    const limitIsAValidNumber: boolean = isAValidNumber(query.limit as string);
+    if (!pageIsAValidNumber || !limitIsAValidNumber) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "Page and limit values can not to be diferent of a valid number.",
+      });
+
+      return;
+    };
+
+    /* Set page, limit and skip values. */
+    const page: number = Number(query.page);
+    const limit: number = Number(query.limit);
+    const skip: number = (page - 1) * limit;
+
+    /* Validate that page and limit values are not equal to zero. */
+    if ((page === 0) || (limit === 0)) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "Page and Limit values can not to be equal to zero.",
+      });
+
+      return;
+    };
+
+    /* Get paginated orders. */
+    const usersPaginated = await usersPagination({ page, limit, skip });
+    const { users, totalUsers, usersByPage, currentUsersQuantity, currentPage, totalPages } = usersPaginated;
+
+    /* Validate if there isn't orders. */
     if (users.length === 0) {
-      res.status(200).json({
-        status: ServerStatusMessage.OK,
+      res.status(404).json({
+        status: ServerStatusMessage.NOT_FOUND,
         msg: "No users found.",
       });
 
       return;
     };
-
+    
+    /* Response users paginated data. */
     res.status(200).json({
       status: ServerStatusMessage.OK,
       data: {
         users,
-        totalPages,
         totalUsers,
+        usersByPage,
+        currentUsersQuantity,
+        currentPage,
+        totalPages,
       },
     });
   } catch (error: any) {
