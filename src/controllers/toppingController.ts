@@ -1,28 +1,25 @@
-import { toppingsPagination } from "@helpers";
+import { Request, Response } from "express";
+import { pagination } from "@helpers";
 import { ToppingRepository } from "@repositories";
 import { ToppingService } from "@services";
-import { IToppingRepository, IToppingService, ServerStatusMessage, Topping } from "@types";
+import { APIResponse, IToppingRepository, IToppingService, PaginationModel, ServerStatusMessage, Topping } from "@types";
 import { isAValidId } from "@utils";
-import { Request, Response } from "express";
 
 const toppingRepository: IToppingRepository = new ToppingRepository();
 const toppingService: IToppingService = new ToppingService(toppingRepository);
 
-const findToppings = async (req: Request, res: Response): Promise<void> => {
+const findToppings = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { query } = req;
-
   const page: number = Number(query.page);
-  const limit: number = Number(query.limit) || 10;
-  const skip: number = (page - 1) * limit || 0;
+  const limit: number = Number(query.limit);
 
   try {
     if (Object.values(query).length === 0) {
       const toppings = await toppingService.findToppings();
-      
       if (toppings.length === 0) {
         res.status(404).json({
           status: ServerStatusMessage.NOT_FOUND,
-          msg: "No topping found.",
+          msg: "No toppings found.",
         });
   
         return;
@@ -30,19 +27,46 @@ const findToppings = async (req: Request, res: Response): Promise<void> => {
 
       res.status(200).json({
         status: ServerStatusMessage.OK,
-        data: toppings,
+        data: {
+          toppings,
+          totalToppings: toppings.length,
+          toppingsByPage: toppings.length,
+          currentToppingsQuantity: toppings.length,
+          currentPage: 1,
+          totalPages: 1,
+        },
       });
 
       return;
     };
 
-    const toppingsPaginated = await toppingsPagination(skip, limit);
-    const { toppings, totalPages, totalToppings } = toppingsPaginated;
+    /* Validate that page and limit query params be valid values. */
+    if ((!page || (page < 0)) || (!limit || limit < 0)) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "Page and limit query params are required as valid number values.",
+      });
 
+      return;
+    };
+
+    /* Get paginated toppings. */
+    const skip: number = (page - 1) * limit;
+    const toppingsPaginated = await pagination({ model: PaginationModel.Toppings, page, limit, skip });
+    const {
+      items: toppings,
+      totalItems: totalToppings,
+      itemsByPage: toppingsByPage,
+      currentItemsQuantity: currentToppingsQuantity,
+      currentPage,
+      totalPages,
+    } = toppingsPaginated;
+
+    /* Validate if there isn't toppings. */
     if (toppings.length === 0) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
-        msg: "No topping found.",
+        msg: "No toppings found.",
       });
 
       return;
@@ -53,6 +77,9 @@ const findToppings = async (req: Request, res: Response): Promise<void> => {
       data: {
         toppings,
         totalToppings,
+        toppingsByPage,
+        currentToppingsQuantity,
+        currentPage,
         totalPages,
       },
     });
@@ -65,7 +92,7 @@ const findToppings = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const findToppingById = async (req: Request, res: Response): Promise<void> => {
+const findToppingById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
   
   const validId = isAValidId(id);
@@ -102,21 +129,21 @@ const findToppingById = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const createTopping = async (req: Request, res: Response): Promise<void> => {
+const createTopping = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const newTopping: Topping = req.body;
-  
-  for (const el of Object.values(newTopping)) {
-    if (String(el).trim().length === 0) {
+  const { name, price } = newTopping;
+
+  for (const key in newTopping) {
+    if (String(newTopping[key as keyof Topping]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Topping fields can not be empty values.",
+        msg: "Fields can not be empty values.",
       });
-
+    
       return;
     };
   };
-
-  const { name, price } = newTopping;
+  
   if ((Object.values(newTopping).length === 0) || !name || !price) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -124,7 +151,7 @@ const createTopping = async (req: Request, res: Response): Promise<void> => {
     });
 
     return;
-  }
+  };
 
   try {
     const toppingExists = await toppingService.findToppingByName(name);
@@ -137,7 +164,10 @@ const createTopping = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    const topping = await toppingService.createTopping({...newTopping, price: Number(price)});
+    const topping = await toppingService.createTopping({
+      ...newTopping,
+      price: Number(price),
+    });
     
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
@@ -153,9 +183,9 @@ const createTopping = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const updateTopping = async (req: Request, res: Response): Promise<void> => {
+const updateTopping = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { params: { id }, body } = req;
-  const updates = body;
+  const updates: Partial<Topping> = body;
 
   const validId = isAValidId(id);
   if (!validId) {
@@ -167,8 +197,8 @@ const updateTopping = async (req: Request, res: Response): Promise<void> => {
     return;
   };
 
-  for (const el of Object.values(updates)) {
-    if (String(el).trim().length === 0) {
+  for (const key in updates) {
+    if (String(updates[key as keyof Topping]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Changes can not be empty values.",
@@ -181,10 +211,10 @@ const updateTopping = async (req: Request, res: Response): Promise<void> => {
   if (Object.values(updates).length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "All topping fields are required.",
+      msg: "Changes are required.",
     });
   
-    return;  
+    return;
   };
 
   try {
@@ -197,7 +227,7 @@ const updateTopping = async (req: Request, res: Response): Promise<void> => {
 
       return;
     };
-
+    
     const toppingUpdated = await toppingService.updateTopping(id, updates);
 
     res.status(201).json({
@@ -214,7 +244,7 @@ const updateTopping = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const deleteTopping = async (req: Request, res: Response): Promise<void> => {
+const deleteTopping = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
   const validId = isAValidId(id);

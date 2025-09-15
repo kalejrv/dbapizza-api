@@ -1,22 +1,22 @@
+import { Request, Response } from "express";
 import { SizeRepository } from "@repositories";
 import { SizeService } from "@services";
-import { ISizeRepository, ISizeService, ServerStatusMessage, Size, SizeOption } from "@types";
+import { APIResponse, ISizeRepository, ISizeService, ServerStatusMessage, Size } from "@types";
 import { isAValidId } from "@utils";
-import { Request, Response } from "express";
 
 const sizeRepository: ISizeRepository = new SizeRepository();
 const sizeService: ISizeService = new SizeService(sizeRepository);
 
-const findSizes = async (req: Request, res: Response): Promise<void> => {
+const findSizes = async (_req: Request, res: Response<APIResponse>): Promise<void> => {
   try {
     const sizes = await sizeService.findSizes();
     
     if (sizes.length === 0) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
-        msg: "No size found.",
+        msg: "No sizes found.",
       });
-  
+
       return;
     };
   
@@ -33,7 +33,7 @@ const findSizes = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const findSizeById = async (req: Request, res: Response): Promise<void> => {
+const findSizeById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
   
   const validId = isAValidId(id);
@@ -47,8 +47,8 @@ const findSizeById = async (req: Request, res: Response): Promise<void> => {
   };
   
   try {
-    const size = await sizeService.findSizeById(id);
-    if (!size) {
+    const sizeExists = await sizeService.findSizeById(id);
+    if (!sizeExists) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
         msg: "Not size found.", 
@@ -59,7 +59,7 @@ const findSizeById = async (req: Request, res: Response): Promise<void> => {
 
     res.status(200).json({
       status: ServerStatusMessage.OK,
-      data: size,
+      data: sizeExists,
     });
   } catch (error: any) {
     console.log("Error: ", error.message);
@@ -70,34 +70,25 @@ const findSizeById = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const createSize = async (req: Request, res: Response): Promise<void> => {
+const createSize = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const newSize: Size = req.body;
+  const { name, price } = newSize;
   
-  for (const el of Object.values(newSize)) {
-    if (String(el).trim().length === 0) {
+  for (const key in newSize) {
+    if (String(newSize[key as keyof Size]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Size fields can not be empty values.",
+        msg: "Fields can not be empty values.",
       });
 
       return;
     };
   };
 
-  const { name, price } = newSize;
   if ((Object.values(newSize).length === 0) || !name || !price) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
       msg: "All fields are required.",
-    });
-
-    return;
-  }
-
-  if (!Object.values(SizeOption).includes(name as SizeOption)) {
-    res.status(400).json({
-      status: ServerStatusMessage.BAD_REQUEST,
-      msg: `Size name must to be: ${SizeOption.Personal}, ${SizeOption.Medium} or ${SizeOption.Large}.`,
     });
 
     return;
@@ -114,7 +105,10 @@ const createSize = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    const size = await sizeService.createSize({...newSize, price: Number(price)});
+    const size = await sizeService.createSize({
+      ...newSize,
+      price: Number(price),
+    });
     
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
@@ -130,9 +124,9 @@ const createSize = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const updateSize = async (req: Request, res: Response): Promise<void> => {
+const updateSize = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { params: { id }, body } = req;
-  const updates = body;
+  const updates: Partial<Size> = body;
 
   const validId = isAValidId(id);
   if (!validId) {
@@ -144,8 +138,8 @@ const updateSize = async (req: Request, res: Response): Promise<void> => {
     return;
   };
 
-  for (const el of Object.values(updates)) {
-    if (String(el).trim().length === 0) {
+  for (const key in updates) {
+    if (String(updates[key as keyof Size]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Changes can not be empty values.",
@@ -158,9 +152,9 @@ const updateSize = async (req: Request, res: Response): Promise<void> => {
   if (Object.values(updates).length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "All size fields are required.",
+      msg: "Changes are required.",
     });
-  
+
     return;
   };
 
@@ -191,7 +185,7 @@ const updateSize = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const deleteSize = async (req: Request, res: Response): Promise<void> => {
+const deleteSize = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
   const validId = isAValidId(id);

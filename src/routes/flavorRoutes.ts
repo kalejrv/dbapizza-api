@@ -1,11 +1,11 @@
+import { Router } from "express";
 import { createFlavor, deleteFlavor, findFlavorById, findFlavors, updateFlavor } from "@controllers";
 import { checkUserPermissions, verifyUserAuth } from "@middlewares";
-import { Router } from "express";
 
 const router = Router();
 const basePath: string = "/flavors";
 
-export const flavorRoutes = () => {
+export const flavorRoutes = (): Router => {
   /**
 * @openapi
 * /api/v1/flavors:

@@ -1,6 +1,6 @@
-import { User } from "@types";
 import mongoose, { Schema, Types } from "mongoose";
 import bcrypt from "bcrypt";
+import { User } from "@types";
 
 /**
 * @openapi

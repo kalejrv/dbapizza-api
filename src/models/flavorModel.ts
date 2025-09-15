@@ -1,5 +1,5 @@
-import { Flavor } from "@types";
 import mongoose, { Schema } from "mongoose";
+import { Flavor } from "@types";
 
 /**
 * @openapi

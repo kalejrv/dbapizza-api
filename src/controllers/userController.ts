@@ -1,16 +1,18 @@
-import { usersPagination } from "@helpers";
+import { Request, Response } from "express";
+import { pagination } from "@helpers";
 import { UserRepository } from "@repositories";
 import { UserService } from "@services";
-import { IUserRepository, IUserService, ServerStatusMessage, User } from "@types";
-import { isAValidId, isAValidNumber } from "@utils";
-import { Request, Response } from "express";
+import { APIResponse, IUserRepository, IUserService, PaginationModel, ServerStatusMessage, User } from "@types";
+import { isAValidId } from "@utils";
 
 const userRepository: IUserRepository = new UserRepository();
 const userService: IUserService = new UserService(userRepository);
 
-const findUsers = async (req: Request, res: Response): Promise<void> => {
+const findUsers = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { query } = req;
-
+  const page: number = Number(query.page);
+  const limit: number = Number(query.limit);
+  
   try {
     if (Object.values(query).length === 0) {
       const users = await userService.findUsers();
@@ -37,39 +39,30 @@ const findUsers = async (req: Request, res: Response): Promise<void> => {
 
       return;
     };
-
-    /* Validate that query object values are of type "number". */
-    const pageIsAValidNumber: boolean = isAValidNumber(query.page as string);
-    const limitIsAValidNumber: boolean = isAValidNumber(query.limit as string);
-    if (!pageIsAValidNumber || !limitIsAValidNumber) {
+    
+    /* Validate that page and limit query params be valid values. */
+    if ((!page || (page < 0)) || (!limit || limit < 0)) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Page and limit values can not to be diferent of a valid number.",
+        msg: "Page and limit query params are required as valid number values.",
       });
 
       return;
     };
 
-    /* Set page, limit and skip values. */
-    const page: number = Number(query.page);
-    const limit: number = Number(query.limit);
+    /* Get paginated users. */
     const skip: number = (page - 1) * limit;
+    const usersPaginated = await pagination({ model: PaginationModel.Users, page, limit, skip });
+    const {
+      items: users,
+      totalItems: totalUsers,
+      itemsByPage: usersByPage,
+      currentItemsQuantity: currentUsersQuantity,
+      currentPage,
+      totalPages,
+    } = usersPaginated;
 
-    /* Validate that page and limit values are not equal to zero. */
-    if ((page === 0) || (limit === 0)) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Page and Limit values can not to be equal to zero.",
-      });
-
-      return;
-    };
-
-    /* Get paginated orders. */
-    const usersPaginated = await usersPagination({ page, limit, skip });
-    const { users, totalUsers, usersByPage, currentUsersQuantity, currentPage, totalPages } = usersPaginated;
-
-    /* Validate if there isn't orders. */
+    /* Validate if there isn't users. */
     if (users.length === 0) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
@@ -78,8 +71,7 @@ const findUsers = async (req: Request, res: Response): Promise<void> => {
 
       return;
     };
-    
-    /* Response users paginated data. */
+
     res.status(200).json({
       status: ServerStatusMessage.OK,
       data: {
@@ -100,7 +92,7 @@ const findUsers = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const findUserById = async (req: Request, res: Response): Promise<void> => {
+const findUserById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
   
   const validId = isAValidId(id);
@@ -137,10 +129,12 @@ const findUserById = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const createUser = async (req: Request, res: Response): Promise<void> => {
+const createUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const newUser: User = req.body;
-  for(const el of Object.values(newUser)) {
-    if (String(el).trim().length === 0) {
+  const { firstName, lastName, address, phone, email, password, role } = newUser;
+
+  for(const key in newUser) {
+    if ((newUser[key as keyof User] as string).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Fields can not be empty values.",
@@ -150,23 +144,21 @@ const createUser = async (req: Request, res: Response): Promise<void> => {
     };
   };
   
-  const { firstName, lastName, address, phone, email, password, role } = newUser;
-  if (!firstName || !lastName || !address || !phone || !email || !password || !role) {
+  if ((Object.values(newUser).length === 0) || !firstName || !lastName || !address || !phone || !email || !password || !role) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
       msg: "All fields are required.",
     });
-
+  
     return;
   };
-
+  
   try {
     const userExists = await userService.findUserByEmail(email);
     if (userExists) {
-      console.log(userExists);
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: `Already exists an account with E-mail: ${email}`,
+        msg: `Already exists an account with E-mail: ${email}.`,
       });
 
       return;
@@ -188,9 +180,9 @@ const createUser = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const updateUser = async (req: Request, res: Response): Promise<void> => {
+const updateUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { params: { id }, body } = req;
-  const updates = body;
+  const updates: Partial<User> = body;
 
   const validId = isAValidId(id);
   if (!validId) {
@@ -205,14 +197,14 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
   if (Object.values(updates).length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Changes can not be empty values.",
+      msg: "Changes are required.",
     });
 
     return;
   };
 
-  for(const el of Object.values(updates)) {
-    if (String(el).trim().length === 0) {
+  for(const key in updates) {
+    if (String(updates[key as keyof User]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Changes can not be empty values.",
@@ -233,8 +225,10 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    if (body.password) {
-      body.password = await userExists.hashPassword(body.password);
+    /* Hash new password if come in updates. */
+    let password = updates.password;
+    if (password) {
+      password = await userExists.hashPassword(password);
     };
 
     const userUpdated = await userService.updateUser(id, updates);
@@ -253,7 +247,7 @@ const updateUser = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const deleteUser = async (req: Request, res: Response): Promise<void> => {
+const deleteUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
   
   const validId = isAValidId(id);

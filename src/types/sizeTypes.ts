@@ -1,15 +1,9 @@
+import { Document } from "mongoose";
 import { Query, Repository } from "./repositoryTypes";
 
-export enum SizeOption {
-  Personal = "Personal",
-  Medium = "Medium",
-  Large = "Large",
-};
-
-export interface Size {
-  _id: object,
-  name: SizeOption,
-  price: number,
+export interface Size extends Document {
+  name: string;
+  price: number;
 };
 
 export interface ISizeRepository extends Repository<Size> { };

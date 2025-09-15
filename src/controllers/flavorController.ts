@@ -1,13 +1,13 @@
+import { Request, Response } from "express";
 import { FlavorRepository } from "@repositories";
 import { FlavorService } from "@services";
-import { Flavor, IFlavorRepository, IFlavorService, ServerStatusMessage } from "@types";
+import { APIResponse, Flavor, IFlavorRepository, IFlavorService, ServerStatusMessage } from "@types";
 import { isAValidId } from "@utils";
-import { Request, Response } from "express";
 
 const flavorRepository: IFlavorRepository = new FlavorRepository();
 const flavorService: IFlavorService = new FlavorService(flavorRepository);
 
-const findFlavors = async (_req: Request, res: Response): Promise<void> => {
+const findFlavors = async (_req: Request, res: Response<APIResponse>): Promise<void> => {
   try {
     const flavors = await flavorService.findFlavors();
     if (flavors.length === 0) {
@@ -32,7 +32,7 @@ const findFlavors = async (_req: Request, res: Response): Promise<void> => {
   };
 };
 
-const findFlavorById = async (req: Request, res: Response): Promise<void> => {
+const findFlavorById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
   
   const validId = isAValidId(id);
@@ -69,21 +69,21 @@ const findFlavorById = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const createFlavor = async (req: Request, res: Response): Promise<void> => {
+const createFlavor = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const newFlavor: Flavor = req.body;
+  const { name, description, price } = newFlavor;
   
-  for (const el of Object.values(newFlavor)) {
-    if (String(el).trim().length === 0) {
+  for (const key in newFlavor) {
+    if (String(newFlavor[key as keyof Flavor]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Flavor fields can not be empty values.",
+        msg: "Fields can not be empty values.",
       });
 
       return;
     };
   };
 
-  const { name, description, price } = newFlavor;
   if ((Object.values(newFlavor).length === 0) || !name || !description || !price) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -91,7 +91,7 @@ const createFlavor = async (req: Request, res: Response): Promise<void> => {
     });
 
     return;
-  }
+  };
 
   try {
     const flavorExists = await flavorService.findFlavorByName(name);
@@ -104,7 +104,10 @@ const createFlavor = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    const flavor = await flavorService.createFlavor({...newFlavor, price: Number(price)});
+    const flavor = await flavorService.createFlavor({
+      ...newFlavor,
+      price: Number(price),
+    });
     
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
@@ -120,9 +123,9 @@ const createFlavor = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const updateFlavor = async (req: Request, res: Response): Promise<void> => {
+const updateFlavor = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { params: { id }, body } = req;
-  const updates = body;
+  const updates: Partial<Flavor> = body;
 
   const validId = isAValidId(id);
   if (!validId) {
@@ -134,8 +137,8 @@ const updateFlavor = async (req: Request, res: Response): Promise<void> => {
     return;
   };
 
-  for (const el of Object.values(updates)) {
-    if (String(el).trim().length === 0) {
+  for (const key in updates) {
+    if (String(updates[key as keyof Flavor]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Changes can not be empty values.",
@@ -145,13 +148,13 @@ const updateFlavor = async (req: Request, res: Response): Promise<void> => {
     };
   };
   
-  if (Object.values(updates).length === 0) {
+  if ((Object.values(updates).length === 0)) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "All flavor fields are required.",
+      msg: "Changes are required.",
     });
-  
-    return;  
+
+    return;
   };
 
   try {
@@ -181,7 +184,7 @@ const updateFlavor = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const deleteFlavor = async (req: Request, res: Response): Promise<void> => {
+const deleteFlavor = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
   const validId = isAValidId(id);

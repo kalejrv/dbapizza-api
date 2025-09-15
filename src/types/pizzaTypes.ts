@@ -1,14 +1,13 @@
-import { Flavor } from "./flavorTypes";
 import { Query, Repository } from "./repositoryTypes";
+import { Flavor } from "./flavorTypes";
 import { Size } from "./sizeTypes";
 
 export interface Pizza {
   flavor: Flavor;
   size: Size;
   image: string;
+  price?: number;
 };
-
-export type PizzaWithPrice = Pizza & { price: number };
 
 export interface IPizzaRepository extends Repository<Pizza> { };
 

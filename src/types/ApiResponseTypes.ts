@@ -6,3 +6,5 @@ export enum ServerStatusMessage {
   NOT_FOUND = "NOT_FOUND",
   UNAUTHORIZED = "UNAUTHORIZED",
 };
+
+export type APIResponse = Record<string, unknown>;

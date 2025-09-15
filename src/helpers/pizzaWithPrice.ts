@@ -1,6 +1,6 @@
-import { Pizza, PizzaWithPrice } from "@types";
+import { Pizza } from "@types";
 
-export const pizzaWithPrice = (pizza: Pizza): PizzaWithPrice => {
+export const pizzaWithPrice = (pizza: Pizza) => {
   const { flavor, size } = pizza;
   
   return {

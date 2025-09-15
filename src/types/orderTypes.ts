@@ -1,25 +1,22 @@
 import { Pizza } from "./pizzaTypes";
 import { Query, Repository } from "./repositoryTypes";
-import { Size } from "./sizeTypes";
 import { Status } from "./statusTypes";
 import { Topping } from "./toppingTypes";
 import { User } from "./userTypes";
 
-export type OrderUser = Pick<User, "firstName" | "lastName" | "address" | "phone" | "email">;
-export type OrderStatus = Status;
-export type OrderTotal = number;
-
 export type ToppingsDetail = {
-  toppings: Topping[],
-  toppingsTotalPrice: number,
+  toppings: Topping[];
+  toppingsTotalPrice: number;
 };
-
 export interface OrderItem {
   pizza: Pizza;
   toppingsDetail?: ToppingsDetail;
-  quantity: number,
-  total: number,
+  quantity: number;
+  total: number;
 };
+export type OrderUser = Pick<User, "firstName" | "lastName" | "address" | "phone" | "email">;
+export type OrderStatus = Status;
+export type OrderTotal = number;
 
 export interface Order {
   user: OrderUser;
@@ -28,11 +25,9 @@ export interface Order {
   total: OrderTotal;
 };
 
-export interface OrderItemFromRequest {
-  pizza: Pizza;
+export interface Item extends Pick<OrderItem, "pizza" | "quantity"> {
   size: string;
   toppings?: Topping[];
-  quantity: number;
 };
 
 export interface IOrderRepository extends Repository<Order> { };

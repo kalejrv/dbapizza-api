@@ -1,19 +1,26 @@
-import { Method, permissions, ServerStatusMessage } from "@types";
+import { APIResponse, Method, Permission, permissions, ServerStatusMessage } from "@types";
 import { NextFunction, Request, Response } from "express";
 
-export const checkUserPermissions = (req: Request, res: Response, next: NextFunction): void => {
+export const checkUserPermissions = (req: Request, res: Response<APIResponse>, next: NextFunction): void => {
   const { userAuth, path, method } = req;
 
-  const currentPath = path.split("/")[1];
-  const findPermission = permissions.find(permission => permission.method === Method[method as keyof typeof Method]);
-  const permissionPath = `${currentPath}_${findPermission?.scope}`;
+  /* Create a permission path with route values. */
+  const routePath = path.split("/")[1];
+  const permission = permissions.find((permission: Permission): boolean => {
+    return permission.method === Method[method as keyof typeof Method];
+  });
+  const permissionPath = `${routePath}_${permission?.scope}`;
 
-  if (!findPermission?.permissions.includes(permissionPath)) {
-    findPermission?.permissions.push(permissionPath);
+  /* Add permission path created to permission finded. */
+  if (!permission?.actions.includes(permissionPath)) {
+    permission?.actions.push(permissionPath);
   };
 
+  /* Compare permission path created with role permissions. */
   const rolePermissions = userAuth.role.permissions;
-  const permissionsGranted = findPermission?.permissions.find(permission => rolePermissions.includes(permission))
+  const permissionsGranted = permission?.actions.find((action): boolean => {
+    return rolePermissions.includes(action);
+  });
 
   try {
     if (!permissionsGranted) {
@@ -21,7 +28,7 @@ export const checkUserPermissions = (req: Request, res: Response, next: NextFunc
         status: ServerStatusMessage.UNAUTHORIZED,
         msg: "User is unauthorized.",
       });
-
+      
       return;
     };
 

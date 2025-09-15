@@ -1,5 +1,6 @@
 import { extname } from 'node:path';
 import multer, { diskStorage } from "multer";
+import config from '@config/config';
 
 enum MYMETYPES {
   jpg = "image/jpg",
@@ -9,12 +10,13 @@ enum MYMETYPES {
 
 export const uploadPizzaImage = multer({
   storage: diskStorage({
-    destination: "uploads/pizzas",
+    destination: `${config.uploads.pizzas}`,
     filename(_req, file, callback) {
       const fileExtension: string = extname(file.originalname);
       const fileName: string = file.originalname.split(fileExtension)[0];
+      const currentDate: number = Date.now();
 
-      callback(null, `${fileName}_${Date.now()}${fileExtension}`.toLowerCase());
+      callback(null, `${fileName}_${currentDate}${fileExtension}`.toLowerCase());
     },
   }),
   fileFilter(_req, file, callback) {
@@ -22,7 +24,7 @@ export const uploadPizzaImage = multer({
     if (!Object.values(MYMETYPES).includes(file!.mimetype as MYMETYPES)) {
       callback(new Error(`Only allowed images with format: ${allowedMymetypes}.`));
     };
-
+    
     callback(null, true);
   },
   limits: {

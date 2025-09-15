@@ -1,8 +1,8 @@
+import { Request, Response } from "express";
 import { RoleRepository, UserRepository } from "@repositories";
 import { RoleService, UserService } from "@services";
-import { IRoleRepository, IRoleService, IUserRepository, IUserService, ServerStatusMessage, User } from "@types";
+import { APIResponse, IRoleRepository, IRoleService, IUserRepository, IUserService, ServerStatusMessage, User } from "@types";
 import { createToken } from "@utils";
-import { Request, Response } from "express";
 
 const userRepository: IUserRepository = new UserRepository();
 const userService: IUserService = new UserService(userRepository);
@@ -10,28 +10,28 @@ const userService: IUserService = new UserService(userRepository);
 const roleRepository: IRoleRepository = new RoleRepository;
 const roleService: IRoleService = new RoleService(roleRepository);
 
-const signupUser = async (req: Request, res: Response): Promise<void> => {
+const signupUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   let newUser: User = req.body;
   const { firstName, lastName, address, phone, email, password } = newUser;
   
-  if ((Object.values(newUser).length === 0) || !firstName || !lastName || !address || !phone || !email || !password) {
-    res.status(400).json({
-      status: ServerStatusMessage.BAD_REQUEST,
-      msg: "All user fields are required.",
-    });
-
-    return;
-  };
-
-  for (const el of Object.values(req.body)) {
-    if (String(el).trim().length === 0) {
+  for (const key in newUser) {
+    if (newUser[key as keyof User].length === 0) {
       res.status(400).json({
-      status: ServerStatusMessage.BAD_REQUEST,
-      msg: "User fields can not be empty values.",
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "Field can not be an empty value.",
       });
 
       return;
     };
+  };
+
+  if (!firstName || !lastName || !address || !phone || !email || !password) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: "All fields are required.",
+    });
+
+    return;
   };
 
   try {
@@ -65,14 +65,14 @@ const signupUser = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const loginUser = async (req: Request, res: Response): Promise<void> => {
+const loginUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { body, body: { email, password } } = req;
   
-  for (const el of Object.values(body)) {
-    if (String(el).trim().length === 0) {
+  for (const key in body) {
+    if ((body[key] as string).trim().length === 0 ) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "E-mail and Password can not be empty values.",
+        msg: "E-mail and Password can not to be empty values.",
       });
 
       return;
@@ -87,7 +87,7 @@ const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     return;
   };
-
+  
   try {
     const userExists = await userService.findUserByEmail(email);
     if (!userExists) {
@@ -110,7 +110,7 @@ const loginUser = async (req: Request, res: Response): Promise<void> => {
     };
 
     const token = createToken({ id: userExists.id });
-
+    
     res.status(200).json({
       status: ServerStatusMessage.OK,
       msg: `${userExists.firstName} logged successfully.`,

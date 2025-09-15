@@ -1,11 +1,11 @@
+import { Router } from "express";
 import { createRole, deleteRole, findRoleById, findRoles, updateRole } from "@controllers";
 import { checkUserPermissions, verifyUserAuth } from "@middlewares";
-import { Router } from "express";
 
 const router = Router();
 const basePath: string = "/roles";
 
-export const roleRoutes = () => {
+export const roleRoutes = (): Router => {
   /**
 * @openapi
 * /api/v1/roles:

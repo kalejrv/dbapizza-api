@@ -11,6 +11,7 @@ export class SizeRepository implements ISizeRepository {
     return await SizeModel
       .find(query || {})
       .select("-createdAt -updatedAt")
+      .sort({ price: 1 })
       .exec();
     };
     

@@ -1,11 +1,11 @@
+import { Router } from "express";
 import { createTopping, deleteTopping, findToppingById, findToppings, updateTopping } from "@controllers";
 import { checkUserPermissions, verifyUserAuth } from "@middlewares";
-import { Router } from "express";
 
 const router = Router();
 const basePath: string = "/toppings";
 
-export const toppingRoutes = () => {
+export const toppingRoutes = (): Router => {
   /**
 * @openapi
 * /api/v1/toppings:

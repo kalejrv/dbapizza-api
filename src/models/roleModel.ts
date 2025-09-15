@@ -1,5 +1,5 @@
-import { Role } from "@types";
 import mongoose, { Schema } from "mongoose";
+import { Role } from "@types";
 
 /**
 * @openapi

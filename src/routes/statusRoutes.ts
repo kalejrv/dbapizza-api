@@ -1,11 +1,11 @@
+import { Router } from "express";
 import { createStatus, deleteStatus, findStatus, findStatusById, updateStatus } from "@controllers";
 import { checkUserPermissions, verifyUserAuth } from "@middlewares";
-import { Router } from "express";
 
 const router = Router();
 const basePath: string = "/status";
 
-export const statusRoutes = () => {
+export const statusRoutes = (): Router => {
   /**
 * @openapi
 * /api/v1/status:

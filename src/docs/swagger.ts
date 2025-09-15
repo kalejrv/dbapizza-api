@@ -1,4 +1,4 @@
-import { Application } from "express";
+import { Application, Request, Response } from "express";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 
@@ -33,11 +33,11 @@ const options: object = {
 const swaggerSpec = swaggerJSDoc(options);
 
 /* Function to setup our docs. */
-const swaggerDocs = (app: Application, port: number) => {
+const swaggerDocs = (app: Application, port: number): void => {
   const url = "/api/v1";
 
   app.use(`${url}/docs`, swaggerUI.serve, swaggerUI.setup(swaggerSpec)); // Route-Handler to visit our docs.
-  app.get(`${url}/docs.json`, (_req, res) => { // Make our docs in JSON format available.
+  app.get(`${url}/docs.json`, (_req: Request, res: Response): void => { // Make our docs in JSON format available.
     res.setHeader("Content-Type", "application/json");
     res.send(swaggerSpec);
   });

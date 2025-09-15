@@ -1,11 +1,11 @@
+import { Router } from "express";
 import { createSize, deleteSize, findSizeById, findSizes, updateSize } from "@controllers";
 import { checkUserPermissions, verifyUserAuth } from "@middlewares";
-import { Router } from "express";
 
 const router = Router();
 const basePath: string = "/sizes";
 
-export const sizeRoutes = () => {
+export const sizeRoutes = (): Router => {
   /**
 * @openapi
 * /api/v1/sizes:

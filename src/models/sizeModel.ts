@@ -1,5 +1,5 @@
-import { Size, SizeOption } from "@types";
 import mongoose, { Schema } from "mongoose";
+import { Size } from "@types";
 
 /**
 * @openapi
@@ -18,7 +18,6 @@ import mongoose, { Schema } from "mongoose";
 const SizeSchema: Schema = new Schema<Size>({
   name: {
     type: String,
-    enum: Object.values(SizeOption),
     required: true,
   },
   price: {

@@ -1,7 +1,7 @@
-import { Pizza, PizzaWithPrice } from "@types";
+import { Pizza } from "@types";
 
-export const pizzasWithPrice = (pizzas: Pizza[]): PizzaWithPrice[] => {
-  return pizzas.map((pizza) => {
+export const pizzasWithPrice = (pizzas: Pizza[]): Pizza[] => {
+  return pizzas.map((pizza: Pizza): Pizza => {
     const { flavor, size } = pizza;
 
     return {

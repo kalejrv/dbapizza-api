@@ -9,7 +9,7 @@ export enum StatusOption {
 
 export interface Status {
   name: StatusOption;
-  description?: string;
+  description: string;
 };
 
 export interface IStatusRepository extends Repository<Status> { };

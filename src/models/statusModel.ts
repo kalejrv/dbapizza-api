@@ -1,5 +1,5 @@
-import { Status, StatusOption } from "@types";
 import mongoose, { Schema } from "mongoose";
+import { Status, StatusOption } from "@types";
 
 /**
 * @openapi

@@ -1,11 +1,11 @@
+import { Router } from "express";
 import { createPizza, deletePizza, findPizzaById, findPizzas, updatePizza } from "@controllers";
 import { checkUserPermissions, uploadPizzaImage, verifyUserAuth } from "@middlewares";
-import { Router } from "express";
 
 const router = Router();
 const basePath: string = "/pizzas";
 
-export const pizzaRoutes = () => {
+export const pizzaRoutes = (): Router => {
   /**
 * @openapi
 * /api/v1/pizzas:

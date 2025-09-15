@@ -1,9 +1,9 @@
-import { calculateTotalOrder, formatOrderItems, ordersPagination } from "@helpers";
+import { Request, Response } from "express";
+import { calculateTotalOrder, formatOrderItems, pagination } from "@helpers";
 import { OrderRepository, StatusRepository } from "@repositories";
 import { OrderService, StatusService } from "@services";
-import { IOrderRepository, IOrderService, IStatusRepository, IStatusService, Order, OrderItem, OrderItemFromRequest, ServerStatusMessage, Status, StatusOption } from "@types";
-import { isAValidId, isAValidNumber } from "@utils";
-import { Request, Response } from "express";
+import { APIResponse, IOrderRepository, IOrderService, IStatusRepository, IStatusService, Item, Order, OrderItem, OrderUser, PaginationModel, ServerStatusMessage, Status, StatusOption } from "@types";
+import { isAValidId } from "@utils";
 
 const orderRepository: IOrderRepository = new OrderRepository;
 const orderService: IOrderService = new OrderService(orderRepository);
@@ -11,19 +11,20 @@ const orderService: IOrderService = new OrderService(orderRepository);
 const statusRepository: IStatusRepository = new StatusRepository;
 const statusService: IStatusService = new StatusService(statusRepository);
 
-const findOrders = async (req: Request, res: Response): Promise<void> => { 
+const findOrders = async (req: Request, res: Response<APIResponse>): Promise<void> => { 
   const { query } = req;
+  const page: number = Number(query.page);
+  const limit: number = Number(query.limit);
   
   try {
-    /* If query object from request is empty do this. */
     if (Object.values(query).length === 0) {
       const orders = await orderService.findOrders();
       if (orders.length === 0) {
         res.status(404).json({
           status: ServerStatusMessage.NOT_FOUND,
-          msg: "No order found.",
+          msg: "No orders found.",
         });
-  
+
         return;
       };
   
@@ -42,49 +43,38 @@ const findOrders = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    /* Validate that query object values are of type "number". */
-    const pageIsAValidNumber: boolean = isAValidNumber(query.page as string);
-    const limitIsAValidNumber: boolean = isAValidNumber(query.limit as string);
+    /* Validate that page and limit query params be valid values. */
+    if ((!page || (page < 0)) || (!limit || limit < 0)) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "Page and limit query params are required as valid number values.",
+      });
+
+      return;
+    };
     
-    if (!pageIsAValidNumber || !limitIsAValidNumber) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Page and limit values can not to be diferent of a valid number.",
-      });
-
-      return;
-    };
-
-    /* Set page, limit and skip values. */
-    const page: number = Number(query.page);
-    const limit: number = Number(query.limit);
-    const skip: number = (page - 1) * limit;
-
-    /* Validate that page and limit values are not equal to zero. */
-    if ((page === 0) || (limit === 0)) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Page and Limit values can not to be equal to zero.",
-      });
-
-      return;
-    };
-
     /* Get paginated orders. */
-    const paginatedOrders = await ordersPagination({ page, limit, skip });
-    const { orders, totalOrders, ordersByPage, currentOrdersQuantity, currentPage, totalPages } = paginatedOrders;
+    const skip: number = (page - 1) * limit;
+    const paginatedOrders = await pagination({ model: PaginationModel.Orders, page, limit, skip });
+    const {
+      items: orders,
+      totalItems: totalOrders,
+      itemsByPage: ordersByPage,
+      currentItemsQuantity: currentOrdersQuantity,
+      currentPage,
+      totalPages,
+    } = paginatedOrders;
 
     /* Validate if there isn't orders. */
     if (orders.length === 0) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
-        msg: "No order found.",
+        msg: "No orders found.",
       });
 
       return;
     };
 
-    /* Response orders paginated data. */
     res.status(200).json({
       status: ServerStatusMessage.OK,
       data: {
@@ -105,9 +95,9 @@ const findOrders = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const findOrderById = async (req: Request, res: Response): Promise<void> => {
+const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
-      
+
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -142,26 +132,18 @@ const findOrderById = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const createOrder = async (req: Request, res: Response): Promise<void> => {
+const createOrder = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { userAuth, body } = req;
   const { firstName, lastName, address, phone, email } = userAuth;
-  const newOrder: OrderItemFromRequest[] = body;
-
-  if (Object.values(body).length === 0) {
-    res.status(400).json({
-      status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Order can not to be a empty value.",
-    });
-
-    return;
-  };
-
-  for(const item of Object.values(body)) {
-    if (item && (typeof item == "object")) {
-      if (Object.keys(item).length === 0) {
+  const newOrder: Item[] = body;
+   
+  /* Validate that items don't contain properties with empty values. */
+  for (const item of newOrder) {
+    for (const key in item) {
+      if ((key !== "toppings") && String(item[key as keyof Item]).trim().length === 0) {
         res.status(400).json({
           status: ServerStatusMessage.BAD_REQUEST,
-          msg: "Order item can not to be a empty value.",
+          msg: "Item fields are required.",
         });
 
         return;
@@ -169,11 +151,49 @@ const createOrder = async (req: Request, res: Response): Promise<void> => {
     };
   };
   
+  /* Validate that items don't come empties. */
+  for (const item of newOrder) {
+    if (Object.values(item).length === 0) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "Item can not be an empty value.",
+      });
+
+      return;
+    };
+  };
+
+  /* Validate that new order don't come empty. */
+  if (newOrder.length === 0) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: "At least 1 item is required.",
+    });
+
+    return;  
+  };
+
+  /* Validate that all required fields don't be an empty value. */
+  for (const item of newOrder) {
+    const { pizza, size, quantity } = item;
+
+    if (!pizza || !size || !quantity) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "A pizza, size and a quantity are required.",
+      });
+            
+      return;
+    };
+  };
+
   try {
-    const user = { firstName, lastName, address, phone, email };
+    /* Build order. */
+    const user: OrderUser = { firstName, lastName, address, phone, email };
     const items: OrderItem[] = await formatOrderItems(newOrder);
-    const status = await statusService.findStatusByName("Pending") as Status;
+    const status: Status = await statusService.findStatusByName("Pending") as Status;
     const total: number = calculateTotalOrder(items);
+
     const orderCreated: Order = await orderService.createOrder({ user, items, status, total });
 
     res.status(201).json({
@@ -190,9 +210,9 @@ const createOrder = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const updateOrder = async (req: Request, res: Response): Promise<void> => {
-  const updates = req.body;
+const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
+  const updates = req.body;
 
   const validId = isAValidId(id);
   if (!validId) {
@@ -205,8 +225,11 @@ const updateOrder = async (req: Request, res: Response): Promise<void> => {
   };
 
   try {
-    /* Check if order exists to be allowed to apply valid updates. */
-    const orderExists = await orderService.findOrderById(id) as Order;
+    const [orderExists, statusExists] = await Promise.all([
+      orderService.findOrderById(id),
+      statusRepository.findById(updates.status),
+    ]);
+
     if (!orderExists) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
@@ -216,9 +239,8 @@ const updateOrder = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    /* Cancel an order only if the order status is equal to "Pending". */
-    const status = await statusRepository.findById(updates.status) as Status;
-    if (status.name === StatusOption["Cancelled"] && (orderExists.status.name === StatusOption["InProgress"] || orderExists.status.name === StatusOption["Done"])) {
+    /* Avoid cancel an order if its status is set as "In progress" or "Done". */
+    if (statusExists!.name === StatusOption["Cancelled"] && (orderExists.status.name === StatusOption["InProgress"] || orderExists.status.name === StatusOption["Done"])) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "The order can not to be cancelled.",
@@ -227,7 +249,8 @@ const updateOrder = async (req: Request, res: Response): Promise<void> => {
       return;
     };
     
-    if (status.name !== StatusOption["Cancelled"] && orderExists.status.name === StatusOption["Cancelled"]) {
+    /* Avoid change order status if already has been set as "Cancelled". */
+    if (statusExists!.name !== StatusOption["Cancelled"] && orderExists.status.name === StatusOption["Cancelled"]) {
       res.status(200).json({
         status: ServerStatusMessage.OK,
         msg: "The order already has been cancelled.",
@@ -237,7 +260,7 @@ const updateOrder = async (req: Request, res: Response): Promise<void> => {
     };
 
     /* Avoid set status to "Pending" to an order that has status "In progress", "Done" or "Cancelled". */
-    if (status.name === StatusOption["Pending"] && orderExists.status.name !== StatusOption["Pending"]) {
+    if (statusExists!.name === StatusOption["Pending"] && orderExists.status.name !== StatusOption["Pending"]) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "The order can no longer be changed to Pending.",
@@ -246,8 +269,8 @@ const updateOrder = async (req: Request, res: Response): Promise<void> => {
       return;
     };
     
-    /* Avoid set status to "In progress" to an order that has status "Done". */
-    if (status.name !== StatusOption["Done"] && orderExists.status.name === StatusOption["Done"]) {
+    /* Avoid change order status if already has been set as "Done". */
+    if (statusExists!.name !== StatusOption["Done"] && orderExists.status.name === StatusOption["Done"]) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "The order can no longer change its status because already is Done.",
@@ -272,7 +295,7 @@ const updateOrder = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const deleteOrder = async (req: Request, res: Response): Promise<void> => {
+const deleteOrder = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
   const validId = isAValidId(id);

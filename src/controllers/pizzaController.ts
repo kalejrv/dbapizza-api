@@ -1,9 +1,10 @@
-import { deletePizzaImage, pizzasPagination, pizzasWithPrice, pizzaWithPrice, renamePizzaImage } from "@helpers";
+import { Request, Response } from "express";
+import { deletePizzaImage, pagination, pizzasWithPrice, pizzaWithPrice, renamePizzaImage } from "@helpers";
 import { FlavorRepository, PizzaRepository, SizeRepository } from "@repositories";
 import { FlavorService, PizzaService, SizeService } from "@services";
-import { IFlavorRepository, IFlavorService, IPizzaRepository, IPizzaService, ISizeRepository, ISizeService, Pizza, ServerStatusMessage } from "@types";
-import { isAValidId, isAValidNumber } from "@utils";
-import { Request, Response } from "express";
+import { APIResponse, IFlavorRepository, IFlavorService, IPizzaRepository, IPizzaService, ISizeRepository, ISizeService, PaginationModel, Pizza, ServerStatusMessage } from "@types";
+import { isAValidId } from "@utils";
+import config from "@config/config";
 
 const pizzaRepository: IPizzaRepository = new PizzaRepository();
 const pizzaService: IPizzaService = new PizzaService(pizzaRepository);
@@ -14,8 +15,10 @@ const flavorService: IFlavorService = new FlavorService(flavorRepository);
 const sizeRepository: ISizeRepository = new SizeRepository();
 const sizeService: ISizeService = new SizeService(sizeRepository);
 
-const findPizzas = async (req: Request, res: Response): Promise<void> => {
+const findPizzas = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { query } = req;
+  const page: number = Number(query.page);
+  const limit: number = Number(query.limit);
 
   try {
     if (Object.values(query).length === 0) {
@@ -23,9 +26,9 @@ const findPizzas = async (req: Request, res: Response): Promise<void> => {
       if (pizzas.length === 0) {
         res.status(404).json({
           status: ServerStatusMessage.NOT_FOUND,
-          msg: "No pizza found.",
+          msg: "No pizzas found.",
         });
-    
+        
         return;
       };
 
@@ -44,38 +47,33 @@ const findPizzas = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    const pageIsAValidNumber: boolean = isAValidNumber(query.page as string);
-    const limitIsAValidNumber: boolean = isAValidNumber(query.limit as string);
-
-    if (!pageIsAValidNumber || !limitIsAValidNumber) {
+    /* Validate that page and limit query params be valid values. */
+    if ((!page || (page < 0)) || (!limit || limit < 0)) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Page and Limit values can not to be diferent of a valid number.",
+        msg: "Page and limit query params are required as valid number values.",
       });
 
       return;
     };
 
-    const page: number = Number(query.page);
-    const limit: number = Number(query.limit);
+    /* Get paginated pizzas. */
     const skip: number = (page - 1) * limit;
+    const pizzasPaginated = await pagination({ model: PaginationModel.Pizzas, page, limit, skip });
+    const {
+      items: pizzas,
+      totalItems: totalPizzas,
+      totalPages,
+      currentPage,
+      itemsByPage: pizzasByPage,
+      currentItemsQuantity: currentPizzasQuantity,
+    } = pizzasPaginated;
 
-    if ((page === 0) || (limit === 0)) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Page and Limit values can no to be equal to zero.",
-      });
-
-      return;
-    };
-
-    const paginatedPizzas = await pizzasPagination({ skip, limit, page });
-    const { pizzas, totalPizzas, totalPages, currentPage, pizzasByPage, currentPizzasQuantity } = paginatedPizzas;
-
+    /* Validate if there ins't pizzas. */
     if (pizzas.length === 0) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
-        msg: "No pizza found.",
+        msg: "No pizzas found.",
       });
   
       return;
@@ -101,7 +99,7 @@ const findPizzas = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const findPizzaById = async (req: Request, res: Response): Promise<void> => {
+const findPizzaById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
     
   const validId = isAValidId(id);
@@ -138,12 +136,13 @@ const findPizzaById = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const createPizza = async (req: Request, res: Response): Promise<void> => {
+const createPizza = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { body, file } = req;
   const newPizza: Pizza = body;
+  const { flavor } = newPizza;
 
-  for(const el of Object.values(newPizza)) {
-    if (String(el).trim().length === 0) {
+  for(const key in newPizza) {
+    if (String(newPizza[key as keyof Pizza]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Fields can not be empty values.",
@@ -152,8 +151,7 @@ const createPizza = async (req: Request, res: Response): Promise<void> => {
       return;
     };
   };
-
-  const { flavor } = newPizza;
+  
   if (!flavor || !file) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -162,46 +160,50 @@ const createPizza = async (req: Request, res: Response): Promise<void> => {
 
     return;
   };
-
-  const flavorIdOfNewPizza = String(flavor);
-  const flavorIdIsAValidId = isAValidId(flavorIdOfNewPizza);
+  
+  /* Validate that flavor id be a valid id. */
+  const flavorIdIsAValidId = isAValidId(flavor.toString());
   if (!flavorIdIsAValidId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Flavor and Size id's must to be a valid id.",
+      msg: "Flavor id must to be a valid id.",
     });
 
     return;
   };
 
   try {
-    const flavorExists = await flavorService.findFlavorById(flavorIdOfNewPizza);
-    const sizeExists = await sizeService.findSizeByName("Personal");
+    /* Validate both flavor and default size ("Personal") be valid values. */
+    const [flavorExists, sizeExists] = await Promise.all([
+      flavorService.findFlavorById(flavor.toString()),
+      sizeService.findSizeByName("Personal"),
+    ]);
     if (!flavorExists || !sizeExists) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "To create a new pizza is necessary a flavor and size existing.",
+        msg: "To create a new pizza is necessary a flavor and an existing size.",
       });
 
       return;
     };
-    
+
+    /* Validate if already exists a pizza with "newPizza" values. */
     const pizzaExists = await pizzaService.findPizza({
       $and: [
-        { flavor: flavorExists?._id.toString() },
-        { size: sizeExists?._id.toString() },
+        { flavor: flavorExists.id },
+        { size: sizeExists.id },
       ],
     });
     if (pizzaExists) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: `Already exists a pizza with ${flavorExists?.name} flavor.`,
+        msg: `Already exists a pizza with '${flavorExists.name}' flavor.`,
       });
       deletePizzaImage(file.path);
       
       return;
     };
-
+    
     const pizzaImageName: string = renamePizzaImage(file, flavorExists.name);
     const pizzaCreated = await pizzaService.createPizza({
       ...newPizza,
@@ -224,7 +226,7 @@ const createPizza = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const updatePizza = async (req: Request, res: Response): Promise<void> => {
+const updatePizza = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { params: { id }, file } = req;
 
   const validId = isAValidId(id);
@@ -234,6 +236,15 @@ const updatePizza = async (req: Request, res: Response): Promise<void> => {
       msg: "Invalid Id.",
     });
 
+    return;
+  };
+  
+  if (!file) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: "Pizza image is required."
+    });
+    
     return;
   };
 
@@ -248,11 +259,14 @@ const updatePizza = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
+    /* Delete current pizza image. */
     const { flavor, image } = pizzaExists;
-    const pizzaImagePath: string = `uploads/pizzas/${image}`;
+    const pizzaImagePath: string = `${config.uploads.pizzas}/${image}`;
     deletePizzaImage(pizzaImagePath);
 
+    /* Rename new pizza image. */
     const newPizzaImageName: string = renamePizzaImage(file, flavor.name);
+    
     const updates = { image: newPizzaImageName };
     const pizzaUpdated = await pizzaService.updatePizza(id, updates);
     
@@ -270,7 +284,7 @@ const updatePizza = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const deletePizza = async (req: Request, res: Response): Promise<void> => {
+const deletePizza = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
   const validId = isAValidId(id);
@@ -294,8 +308,10 @@ const deletePizza = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    const pizzaImagePath: string = `uploads/pizzas/${pizzaExists.image}`;
+    /* Delete pizza image. */
+    const pizzaImagePath: string = `${config.uploads.pizzas}/${pizzaExists.image}`;
     deletePizzaImage(pizzaImagePath);
+    
     await pizzaService.deletePizza(id);
 
     res.status(200).json({

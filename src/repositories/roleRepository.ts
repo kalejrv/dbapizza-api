@@ -8,11 +8,15 @@ export class RoleRepository implements IRoleRepository {
   };
 
   async find(query?: Query): Promise<Role[]> {
-    return await RoleModel.find(query || {}).exec();
+    return await RoleModel
+      .find(query || {})
+      .exec();
   };
 
   async findById(id: string): Promise<Role | null> {
-    return await RoleModel.findById(id).exec();
+    return await RoleModel
+      .findById(id)
+      .exec();
   };
 
   async findOne(query: Query): Promise<Role | null> {
@@ -23,7 +27,9 @@ export class RoleRepository implements IRoleRepository {
   };
 
   async update(id: string, data: Partial<Role>): Promise<Role | null> {
-    return await RoleModel.findByIdAndUpdate(id, data, { new: true }).exec();
+    return await RoleModel
+      .findByIdAndUpdate(id, data, { new: true })
+      .exec();
   };
 
   async delete(id: string): Promise<boolean> {

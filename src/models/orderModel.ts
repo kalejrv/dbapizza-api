@@ -1,5 +1,5 @@
-import { Order, OrderItem, OrderUser, ToppingsDetail } from "@types";
 import mongoose, { Schema, Types } from "mongoose";
+import { Order, OrderItem, OrderUser, ToppingsDetail } from "@types";
 
 const OrderUserSchema: Schema = new Schema<OrderUser>({
   firstName: {

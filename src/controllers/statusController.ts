@@ -1,13 +1,13 @@
+import { Request, Response } from "express";
 import { StatusRepository } from "@repositories";
 import { StatusService } from "@services";
-import { IStatusRepository, IStatusService, ServerStatusMessage, Status, StatusOption } from "@types";
+import { APIResponse, IStatusRepository, IStatusService, ServerStatusMessage, Status, StatusOption } from "@types";
 import { isAValidId } from "@utils";
-import { Request, Response } from "express";
 
 const statusRepository: IStatusRepository = new StatusRepository();
 const statusService: IStatusService = new StatusService(statusRepository);
 
-const findStatus = async (_req: Request, res: Response): Promise<void> => {
+const findStatus = async (_req: Request, res: Response<APIResponse>): Promise<void> => {
   try {
     const status = await statusService.findStatus();
 
@@ -33,7 +33,7 @@ const findStatus = async (_req: Request, res: Response): Promise<void> => {
   };
 };
 
-const findStatusById = async (req: Request, res: Response): Promise<void> => {
+const findStatusById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
   const validId = isAValidId(id);
@@ -70,31 +70,34 @@ const findStatusById = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const createStatus = async (req: Request, res: Response): Promise<void> => {
+const createStatus = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const newStatus: Status = req.body;
+  const { name, description } = newStatus;
   
-  for (const el of Object.values(newStatus)) {
-    if (String(el).trim().length === 0) {
+  for (const key in newStatus) {
+    if (String(newStatus[key as keyof Status]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Status fields can not to be empty values.",
+        msg: "Fields can not to be empty values.",
       });
 
       return;
     };
   };
 
-  const { name, description } = newStatus;
-  if (!name || name.trim().length === 0)  {
+  if ((Object.values(newStatus).length === 0) || !name || !description) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "A status name is neccesary.",
+      msg: "All fields are required.",
     });
     
     return;
   };
 
-  const statusOptions: string = Object.values(StatusOption).reduce((prev, curr) => prev += curr + ", ", "");
+  /* Validate that Status name be a valid name. */
+  const statusOptions: string = Object.values(StatusOption).reduce((prev: string, curr: StatusOption): string => {
+    return prev += curr + ", ";
+  }, "");
   if (!Object.values(StatusOption).includes(name as StatusOption)) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -116,10 +119,7 @@ const createStatus = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    const status = await statusService.createStatus({
-      ...newStatus,
-      description: description || "No description.",
-    });
+    const status = await statusService.createStatus(newStatus);
 
     res.status(201).json({
       stauts: ServerStatusMessage.CREATED,
@@ -135,8 +135,10 @@ const createStatus = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const updateStatus = async (req: Request, res: Response): Promise<void> => {
+const updateStatus = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
+  const updates: Partial<Status> = req.body;
+
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -147,24 +149,36 @@ const updateStatus = async (req: Request, res: Response): Promise<void> => {
     return;
   };
   
-  const updates: Status = req.body;
-  const { name } = updates;
-  if (!name || name.trim().length === 0) {
+  for (const key in updates) {
+    if (String(updates[key as keyof Status]).trim().length === 0) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: "Changes can not be empty values.",
+      });
+
+      return;
+    };
+  };
+
+  if (Object.values(updates).length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Status name is required.",
+      msg: "Changes are required.",
     });
     
     return;
   };
-  
-  if (!Object.values(StatusOption).includes(name as StatusOption)) {
-    res.status(400).json({
-      status: ServerStatusMessage.BAD_REQUEST,
-      msg: `Status name must to be: ${StatusOption.Pending}, ${StatusOption.InProgress} or ${StatusOption.Done}.`,
-    });
 
-    return;
+  /* Validate that Status name be a valid name. */
+  if (updates.name) {
+    if (!Object.values(StatusOption).includes(updates.name as StatusOption)) {
+      res.status(400).json({
+        status: ServerStatusMessage.BAD_REQUEST,
+        msg: `Status name must to be: ${StatusOption.Pending}, ${StatusOption.InProgress} or ${StatusOption.Done}.`,
+      });
+
+      return;
+    };
   };
 
   try {
@@ -178,10 +192,7 @@ const updateStatus = async (req: Request, res: Response): Promise<void> => {
       return;
     };
 
-    const statusUpdated = await statusService.updateStatus(id, {
-      ...updates,
-      description: updates.description || "No description.",
-    });
+    const statusUpdated = await statusService.updateStatus(id, updates);
 
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
@@ -197,7 +208,7 @@ const updateStatus = async (req: Request, res: Response): Promise<void> => {
   };
 };
 
-const deleteStatus = async (req: Request, res: Response): Promise<void> => {
+const deleteStatus = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
   const validId = isAValidId(id);

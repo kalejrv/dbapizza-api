@@ -1,10 +1,11 @@
-import { authRouter, flavorRoutes, orderRoutes, pizzaRoutes, roleRoutes, sizeRoutes, statusRoutes, toppingRoutes, userRoutes } from "@routes";
 import express, { Application } from "express";
 import morgan from "morgan";
 import cors from "cors";
+import config from "@config/config";
+import { authRouter, flavorRoutes, orderRoutes, pizzaRoutes, roleRoutes, sizeRoutes, statusRoutes, toppingRoutes, userRoutes } from "@routes";
 
 const app: Application = express();
-const v1Api: string = "/api/v1";
+const v1Api: string = config.router.v1;
 
 app.use(express.json()); /* Allow parse JSON data format. */
 app.use(express.urlencoded({ extended: true })); /* Allow user data from forms. */

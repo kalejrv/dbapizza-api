@@ -39,6 +39,7 @@
   "_moduleAliases": {
     "@config": "./dist/config",
     "@controllers": "./dist/controllers",
+    "@db": "./dist/db",
     "@docs": "./dist/docs",
     "@helpers": "./dist/helpers",
     "@middlewares": "./dist/middlewares",

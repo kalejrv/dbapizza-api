@@ -1,11 +1,11 @@
+import { Router } from "express";
 import { createUser, deleteUser, findUserById, findUsers, updateUser } from "@controllers";
 import { checkUserPermissions, verifyUserAuth } from "@middlewares";
-import { Router } from "express";
 
 const router = Router();
 const basePath: string = "/users";
 
-export const userRoutes = () => {
+export const userRoutes = (): Router => {
   /**
 * @openapi
 * /api/v1/users:

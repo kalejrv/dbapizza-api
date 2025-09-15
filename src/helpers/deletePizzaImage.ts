@@ -5,7 +5,7 @@ export const deletePizzaImage = (imagePath: string): void => {
     throw new Error("Pizza image doesn't exist.");
   };
   
-  fs.unlink(imagePath, (error) => {
+  fs.unlink(imagePath, (error): void => {
     if (error) {
       throw new Error("Error deleting pizza image.");
     };

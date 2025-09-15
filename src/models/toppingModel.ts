@@ -1,5 +1,5 @@
-import { Topping } from "@types";
 import mongoose, { Schema } from "mongoose";
+import { Topping } from "@types";
 
 /**
 * @openapi

@@ -1,7 +1,7 @@
+import { Document } from "mongoose";
 import { Query, Repository } from "./repositoryTypes";
 
-export interface Flavor {
-  _id: object,
+export interface Flavor extends Document {
   name: string;
   description: string;
   price: number;

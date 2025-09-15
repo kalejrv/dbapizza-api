@@ -1,5 +1,5 @@
-import { Pizza } from "@types";
 import mongoose, { Schema, Types } from "mongoose";
+import { Pizza } from "@types";
 
 /**
 * @openapi
