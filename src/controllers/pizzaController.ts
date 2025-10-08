@@ -19,14 +19,18 @@ const findPizzas = async (req: Request, res: Response<APIResponse>): Promise<voi
   const { query } = req;
   const page: number = Number(query.page);
   const limit: number = Number(query.limit);
-
+  
   try {
     if (Object.values(query).length === 0) {
-      const pizzas = await pizzaService.findPizzas();
-      if (pizzas.length === 0) {
-        res.status(404).json({
-          status: ServerStatusMessage.NOT_FOUND,
+      const items = await pizzaService.findPizzas();
+      if (items.length === 0) {
+        res.status(200).json({
+          status: ServerStatusMessage.OK,
           msg: "No pizzas found.",
+          data: {
+            items,
+            totalItems: items.length,
+          },
         });
         
         return;
@@ -35,10 +39,10 @@ const findPizzas = async (req: Request, res: Response<APIResponse>): Promise<voi
       res.status(200).json({
         status: ServerStatusMessage.OK,
         data: {
-          pizzas: pizzasWithPrice(pizzas),
-          totalPizzas: pizzas.length,
-          pizzasByPage: pizzas.length,
-          currentPizzasQuantity: pizzas.length,
+          items: pizzasWithPrice(items),
+          totalItems: items.length,
+          itemsByPage: items.length,
+          currentItemsQuantity: items.length,
           currentPage: 1,
           totalPages: 1,
         },
@@ -60,20 +64,17 @@ const findPizzas = async (req: Request, res: Response<APIResponse>): Promise<voi
     /* Get paginated pizzas. */
     const skip: number = (page - 1) * limit;
     const pizzasPaginated = await pagination({ model: PaginationModel.Pizzas, page, limit, skip });
-    const {
-      items: pizzas,
-      totalItems: totalPizzas,
-      totalPages,
-      currentPage,
-      itemsByPage: pizzasByPage,
-      currentItemsQuantity: currentPizzasQuantity,
-    } = pizzasPaginated;
+    const { items, totalItems, totalPages, currentPage, itemsByPage, currentItemsQuantity } = pizzasPaginated;
 
     /* Validate if there ins't pizzas. */
-    if (pizzas.length === 0) {
-      res.status(404).json({
-        status: ServerStatusMessage.NOT_FOUND,
+    if (items.length === 0) {
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
         msg: "No pizzas found.",
+        data: {
+          items,
+          totalItems: items.length,
+        },
       });
   
       return;
@@ -82,10 +83,10 @@ const findPizzas = async (req: Request, res: Response<APIResponse>): Promise<voi
     res.status(200).json({
       status: ServerStatusMessage.OK,
       data: {
-        pizzas: pizzasWithPrice(pizzas),
-        totalPizzas,
-        pizzasByPage,
-        currentPizzasQuantity,
+        items: pizzasWithPrice(items),
+        totalItems,
+        itemsByPage,
+        currentItemsQuantity,
         currentPage,
         totalPages,
       },
@@ -94,7 +95,7 @@ const findPizzas = async (req: Request, res: Response<APIResponse>): Promise<voi
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -131,7 +132,7 @@ const findPizzaById = async (req: Request, res: Response<APIResponse>): Promise<
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -195,8 +196,8 @@ const createPizza = async (req: Request, res: Response<APIResponse>): Promise<vo
       ],
     });
     if (pizzaExists) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
+      res.status(409).json({
+        status: ServerStatusMessage.CONFLICT,
         msg: `Already exists a pizza with '${flavorExists.name}' flavor.`,
       });
       deletePizzaImage(file.path);
@@ -221,7 +222,7 @@ const createPizza = async (req: Request, res: Response<APIResponse>): Promise<vo
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -270,8 +271,8 @@ const updatePizza = async (req: Request, res: Response<APIResponse>): Promise<vo
     const updates = { image: newPizzaImageName };
     const pizzaUpdated = await pizzaService.updatePizza(id, updates);
     
-    res.status(201).json({
-      status: ServerStatusMessage.CREATED,
+    res.status(200).json({
+      status: ServerStatusMessage.OK,
       msg: "Pizza updated successfully.",
       data: pizzaUpdated,
     });
@@ -279,7 +280,7 @@ const updatePizza = async (req: Request, res: Response<APIResponse>): Promise<vo
     console.log("Error: ", error.message),
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -315,14 +316,14 @@ const deletePizza = async (req: Request, res: Response<APIResponse>): Promise<vo
     await pizzaService.deletePizza(id);
 
     res.status(200).json({
-      status: ServerStatusMessage.OK,
+      status: ServerStatusMessage.DELETED,
       msg: "Pizza deleted successfully.",
     });
   } catch (error: any) {
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };

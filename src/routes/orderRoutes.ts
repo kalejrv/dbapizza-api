@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createOrder, deleteOrder, findOrderById, findOrders, updateOrder } from "@controllers";
+import { createOrder, deleteOrder, findOrderById, findOrders, findOrdersStatsByMonth, updateOrder } from "@controllers";
 import { checkUserPermissions, verifyUserAuth } from "@middlewares";
 
 const router = Router();
@@ -102,6 +102,9 @@ export const orderRoutes = (): Router => {
 *                   type: object
 */
   router.get(`${basePath}`, verifyUserAuth, checkUserPermissions, findOrders);
+
+  /* TODO: add endpoint doc. */
+  router.get(`${basePath}/stats_by_month`, verifyUserAuth, checkUserPermissions, findOrdersStatsByMonth);
   
   /**
 * @openapi

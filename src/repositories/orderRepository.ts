@@ -16,7 +16,11 @@ export class OrderRepository implements IOrderRepository {
       .populate("items.toppingsDetail.toppings", "-_id -createdAt -updatedAt")
       .exec();
     };
-    
+  
+  async findCount(query?: Query): Promise<number> {
+    return await OrderModel.countDocuments(query);
+  };
+
   async findById(id: string): Promise<Order | null> {
     return await OrderModel
       .findById(id)

@@ -15,6 +15,11 @@ export class OrderService implements IOrderService {
     return this.orderRepository.find(query);
   };
   
+  async findOrdersCount(query?: Query): Promise<number> {
+    const count = this.orderRepository.findCount?.(query);
+    return count ?? 0;
+  };
+
   async findOrder(query: Query): Promise<Order | null> {
     return this.orderRepository.findOne(query);
   };

@@ -6,3 +6,5 @@ export * from "./formatOrderItems";
 export * from "./calculateTotalOrder";
 export * from "./pagination";
 export * from "./queryModel";
+export * from "./calculateItemsGrowthRate";
+export * from "./calculateSalesRate";

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { pagination } from "@helpers";
+import { calculateItemsGrowthRate, pagination } from "@helpers";
 import { UserRepository } from "@repositories";
 import { UserService } from "@services";
 import { APIResponse, IUserRepository, IUserService, PaginationModel, ServerStatusMessage, User } from "@types";
@@ -15,23 +15,27 @@ const findUsers = async (req: Request, res: Response<APIResponse>): Promise<void
   
   try {
     if (Object.values(query).length === 0) {
-      const users = await userService.findUsers();
-      if (users.length === 0) {
-        res.status(404).json({
-          status: ServerStatusMessage.NOT_FOUND,
-          msg: "No users found.",
+      const items = await userService.findUsers();
+      if (items.length === 0) {
+        res.status(200).json({
+          status: ServerStatusMessage.OK,
+          msg: "No users yet.",
+          data: {
+            items,
+            totalItems: items.length,
+          },
         });
-  
+
         return;
       };
   
       res.status(200).json({
         status: ServerStatusMessage.OK,
         data: {
-          users,
-          totalUsers: users.length,
-          usersByPage: users.length,
-          currentUsersQuantity: users.length,
+          items,
+          totalItems: items.length,
+          itemsByPage: items.length,
+          currentItemsQuantity: items.length,
           currentPage: 1,
           totalPages: 1,
         },
@@ -53,20 +57,17 @@ const findUsers = async (req: Request, res: Response<APIResponse>): Promise<void
     /* Get paginated users. */
     const skip: number = (page - 1) * limit;
     const usersPaginated = await pagination({ model: PaginationModel.Users, page, limit, skip });
-    const {
-      items: users,
-      totalItems: totalUsers,
-      itemsByPage: usersByPage,
-      currentItemsQuantity: currentUsersQuantity,
-      currentPage,
-      totalPages,
-    } = usersPaginated;
+    const { items, totalItems, itemsByPage, currentItemsQuantity, currentPage, totalPages } = usersPaginated;
 
     /* Validate if there isn't users. */
-    if (users.length === 0) {
-      res.status(404).json({
-        status: ServerStatusMessage.NOT_FOUND,
-        msg: "No users found.",
+    if (items.length === 0) {
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
+        msg: "No users yet.",
+        data: {
+          items,
+          totalItems: items.length,
+        },
       });
 
       return;
@@ -75,10 +76,10 @@ const findUsers = async (req: Request, res: Response<APIResponse>): Promise<void
     res.status(200).json({
       status: ServerStatusMessage.OK,
       data: {
-        users,
-        totalUsers,
-        usersByPage,
-        currentUsersQuantity,
+        items,
+        totalItems,
+        itemsByPage,
+        currentItemsQuantity,
         currentPage,
         totalPages,
       },
@@ -86,8 +87,72 @@ const findUsers = async (req: Request, res: Response<APIResponse>): Promise<void
   } catch (error: any) {
     console.log("Error: ", error.message);
     res.status(500).json({
-      stauts: ServerStatusMessage.FAILED,
-      error,
+      status: ServerStatusMessage.FAILED,
+      msg: error.message,
+    });
+  };
+};
+
+const findUsersStatsByMonth = async (req: Request, res: Response<APIResponse>): Promise<void> => {
+  const { query } = req;
+  const year = Number(query.year);
+  const month = Number(query.month);
+
+  if (!year || !month) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: "A valid year and month is required.",
+    });
+
+    return;
+  };
+
+  /* Build current month dates range. */
+  const startOfCurrentMonth = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+  const endOfCurrentMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
+  /* Build last month dates range. */
+  const startOfLastMonth = new Date(Date.UTC(year, month - 2, 1, 0, 0, 0, 0));
+  const endOfLasMonth = new Date(Date.UTC(year, month - 1, 0, 23, 59, 59, 999));
+
+  try {
+    const [currentMonthItemsCount, lastMonthItemsCount, totalItemsCount] = await Promise.all([
+      userService.findUsersCount({
+        createdAt: {
+          $gte: startOfCurrentMonth,
+          $lte: endOfCurrentMonth,
+        },
+      }),
+      userService.findUsersCount({
+        createdAt: {
+          $gte: startOfLastMonth,
+          $lte: endOfLasMonth,
+        },
+      }),
+      userService.findUsersCount(),
+    ]);
+
+    /* Calculate month items growth rate. */
+    const itemsGrowthRate = calculateItemsGrowthRate({ currentMonthItemsCount, lastMonthItemsCount });
+
+    res.status(200).json({
+      status: ServerStatusMessage.OK,
+      data: {
+        year,
+        month,
+        items: {
+          currentMonthItemsCount: itemsGrowthRate.currentMonthItemsCount,
+          lastMonthItemsCount: itemsGrowthRate.lastMonthItemsCount,
+          itemsGrowthRate: itemsGrowthRate.itemsGrowthRate,
+          totalItemsCount,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.log("Error: ", error.message);
+    res.status(500).json({
+      status: ServerStatusMessage.FAILED,
+      msg: error.message,
     });
   };
 };
@@ -124,7 +189,7 @@ const findUserById = async (req: Request, res: Response<APIResponse>): Promise<v
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -156,8 +221,8 @@ const createUser = async (req: Request, res: Response<APIResponse>): Promise<voi
   try {
     const userExists = await userService.findUserByEmail(email);
     if (userExists) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
         msg: `Already exists an account with E-mail: ${email}.`,
       });
 
@@ -175,7 +240,7 @@ const createUser = async (req: Request, res: Response<APIResponse>): Promise<voi
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -233,8 +298,8 @@ const updateUser = async (req: Request, res: Response<APIResponse>): Promise<voi
 
     const userUpdated = await userService.updateUser(id, updates);
     
-    res.status(201).json({
-      status: ServerStatusMessage.CREATED,
+    res.status(200).json({
+      status: ServerStatusMessage.UPDATED,
       msg: "User updated successfully.",
       data: userUpdated,
     });
@@ -242,7 +307,7 @@ const updateUser = async (req: Request, res: Response<APIResponse>): Promise<voi
     console.log("Error: ", error.message),
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -274,20 +339,21 @@ const deleteUser = async (req: Request, res: Response<APIResponse>): Promise<voi
     await userService.deleteUser(id);
 
     res.status(200).json({
-      status: ServerStatusMessage.OK,
+      status: ServerStatusMessage.DELETED,
       msg: "User deleted successfully.",
     });
   } catch (error: any) {
     console.log("Error: ", error.message),
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
 
 export {
   findUsers,
+  findUsersStatsByMonth,
   findUserById,
   createUser,
   updateUser,

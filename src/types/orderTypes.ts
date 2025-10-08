@@ -35,6 +35,7 @@ export interface IOrderRepository extends Repository<Order> { };
 export interface IOrderService {
   createOrder(order: Order): Promise<Order>;
   findOrders(query?: Query): Promise<Order[]>;
+  findOrdersCount(query?: Query): Promise<number>;
   findOrder(query: Query): Promise<Order | null>;
   findOrderById(id: string): Promise<Order | null>;
   updateOrder(id: string, Order: Partial<Order>): Promise<Order | null>;

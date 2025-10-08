@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { calculateTotalOrder, formatOrderItems, pagination } from "@helpers";
+import { calculateItemsGrowthRate, calculateSalesRate, calculateTotalOrder, formatOrderItems, pagination } from "@helpers";
 import { OrderRepository, StatusRepository } from "@repositories";
 import { OrderService, StatusService } from "@services";
 import { APIResponse, IOrderRepository, IOrderService, IStatusRepository, IStatusService, Item, Order, OrderItem, OrderUser, PaginationModel, ServerStatusMessage, Status, StatusOption } from "@types";
@@ -18,11 +18,15 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
   
   try {
     if (Object.values(query).length === 0) {
-      const orders = await orderService.findOrders();
-      if (orders.length === 0) {
+      const items = await orderService.findOrders();
+      if (items.length === 0) {
         res.status(404).json({
           status: ServerStatusMessage.NOT_FOUND,
           msg: "No orders found.",
+          data: {
+            items,
+            totalItems: items.length,
+          },
         });
 
         return;
@@ -31,10 +35,10 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
       res.status(200).json({
         status: ServerStatusMessage.OK,
         data: {
-          orders,
-          totalOrders: orders.length,
-          ordersByPage: orders.length,
-          currentOrdersQuantity: orders.length,
+          items,
+          totalItems: items.length,
+          itemsByPage: items.length,
+          currentItemsQuantity: items.length,
           currentPage: 1,
           totalPages: 1,
         },
@@ -56,20 +60,16 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
     /* Get paginated orders. */
     const skip: number = (page - 1) * limit;
     const paginatedOrders = await pagination({ model: PaginationModel.Orders, page, limit, skip });
-    const {
-      items: orders,
-      totalItems: totalOrders,
-      itemsByPage: ordersByPage,
-      currentItemsQuantity: currentOrdersQuantity,
-      currentPage,
-      totalPages,
-    } = paginatedOrders;
+    const { items, totalItems, itemsByPage, currentItemsQuantity, currentPage, totalPages } = paginatedOrders;
 
     /* Validate if there isn't orders. */
-    if (orders.length === 0) {
+    if (items.length === 0) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
-        msg: "No orders found.",
+        data: {
+          items,
+          totalItems: items.length,
+        },
       });
 
       return;
@@ -78,10 +78,10 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
     res.status(200).json({
       status: ServerStatusMessage.OK,
       data: {
-        orders,
-        totalOrders,
-        ordersByPage,
-        currentOrdersQuantity,
+        items,
+        totalItems,
+        itemsByPage,
+        currentItemsQuantity,
         currentPage,
         totalPages,
       },
@@ -90,7 +90,89 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
+    });
+  };
+};
+
+const findOrdersStatsByMonth = async (req: Request, res: Response<APIResponse>): Promise<void> => {
+  const { query } = req;
+  const year: number = Number(query.year);
+  const month: number = Number(query.month);
+
+  if (!year || !month) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: "A valid year and month is required.",
+    });
+
+    return;
+  };
+
+  /* Build current month dates range. */
+  const startOfCurrentMonth = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+  const endOfCurrentMonth = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+
+  /* Build last month dates range. */
+  const startOfLastMonth = new Date(Date.UTC(year, month - 2, 1, 0, 0, 0, 0));
+  const endOfLasMonth = new Date(Date.UTC(year, month - 1, 0, 23, 59, 59, 999));
+
+  try {
+    const [currentMonthItems, lastMonthItems, totalItems] = await Promise.all([
+      orderService.findOrders({
+        createdAt: {
+          $gte: startOfCurrentMonth,
+          $lte: endOfCurrentMonth,
+        },
+      }),
+      orderService.findOrders({
+        createdAt: {
+          $gte: startOfLastMonth,
+          $lte: endOfLasMonth,
+        },
+      }),
+      orderService.findOrders(),
+    ]);
+
+    /* Calculate month items growth rate. */
+    const { currentMonthItemsCount, lastMonthItemsCount, itemsGrowthRate } = calculateItemsGrowthRate({
+      currentMonthItemsCount: currentMonthItems.length,
+      lastMonthItemsCount: lastMonthItems.length,
+    });
+    
+    /* Calculate month sales growth rate. */
+    const { currentMonthSalesAmount, lastMonthSalesAmount, salesGrowthRate } = calculateSalesRate({
+      currentMonthItems,
+      lastMonthItems,
+    });
+    
+    /* Calculate total sales. */
+    const totalSalesAmount = totalItems.reduce((prev, curr): number => prev += curr.total, 0);
+    
+    res.status(200).json({
+      status: ServerStatusMessage.OK,
+      data: {
+        year,
+        month,
+        items: {
+          currentMonthItemsCount,
+          lastMonthItemsCount,
+          itemsGrowthRate,
+          totalItemsCount: totalItems.length,
+        },
+        sales: {
+          currentMonthSalesAmount,
+          lastMonthSalesAmount,
+          salesGrowthRate,
+          totalSalesAmount,
+        },
+      },
+    });
+  } catch (error: any) {
+    console.log("Error: ", error.message);
+    res.status(500).json({
+      status: ServerStatusMessage.FAILED,
+      msg: error.message,
     });
   };
 };
@@ -127,7 +209,7 @@ const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -205,7 +287,7 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -241,8 +323,8 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
 
     /* Avoid cancel an order if its status is set as "In progress" or "Done". */
     if (statusExists!.name === StatusOption["Cancelled"] && (orderExists.status.name === StatusOption["InProgress"] || orderExists.status.name === StatusOption["Done"])) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
         msg: "The order can not to be cancelled.",
       });
 
@@ -261,8 +343,8 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
 
     /* Avoid set status to "Pending" to an order that has status "In progress", "Done" or "Cancelled". */
     if (statusExists!.name === StatusOption["Pending"] && orderExists.status.name !== StatusOption["Pending"]) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
         msg: "The order can no longer be changed to Pending.",
       });
 
@@ -271,8 +353,8 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     
     /* Avoid change order status if already has been set as "Done". */
     if (statusExists!.name !== StatusOption["Done"] && orderExists.status.name === StatusOption["Done"]) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
         msg: "The order can no longer change its status because already is Done.",
       });
 
@@ -281,8 +363,8 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
 
     const orderUpdated = await orderService.updateOrder(id, updates) as Order;
 
-    res.status(201).json({
-      status: ServerStatusMessage.CREATED,
+    res.status(200).json({
+      status: ServerStatusMessage.UPDATED,
       msg: "Order updated successfully.",
       data: orderUpdated,
     });
@@ -290,7 +372,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -322,20 +404,21 @@ const deleteOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     await orderService.deleteOrder(id);
 
     res.status(200).json({
-      status: ServerStatusMessage.OK,
+      status: ServerStatusMessage.DELETED,
       msg: "Order deleted successfully.",
     });
   } catch (error: any) {
     console.log("Error: ", error.message);
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
 
 export {
   findOrders,
+  findOrdersStatsByMonth,
   findOrderById,
   createOrder,
   updateOrder,

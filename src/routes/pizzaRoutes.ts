@@ -171,7 +171,7 @@ export const pizzaRoutes = (): Router => {
 *                 error:
 *                   type: object
 */
-  router.get(`${basePath}/:id`, verifyUserAuth, checkUserPermissions, findPizzaById);
+  router.get(`${basePath}/:id`, findPizzaById);
 
   /**
 * @openapi
