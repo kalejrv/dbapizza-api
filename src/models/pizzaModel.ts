@@ -1,4 +1,4 @@
-import mongoose, { Schema, Types } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { Pizza } from "@types";
 
 /**
@@ -20,13 +20,17 @@ import { Pizza } from "@types";
 */
 const PizzaSchema: Schema = new Schema<Pizza>({
   flavor: {
+    type: Schema.Types.ObjectId,
     ref: "Flavors",
-    type: Types.ObjectId,
     required: true,
   },
   size: {
+    type: Schema.Types.ObjectId,
     ref: "Sizes",
-    type: Types.ObjectId,
+    required: true,
+  },
+  price: {
+    type: Number,
     required: true,
   },
   image: {

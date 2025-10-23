@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { calculateItemsGrowthRate, calculateSalesRate, calculateTotalOrder, formatOrderItems, pagination } from "@helpers";
+import { addNewStatusHistory, calculateItemsGrowthRate, calculateSalesGrowthRate, calculateTotalOrder, formatOrderItems, pagination } from "@helpers";
 import { OrderRepository, StatusRepository } from "@repositories";
 import { OrderService, StatusService } from "@services";
-import { APIResponse, IOrderRepository, IOrderService, IStatusRepository, IStatusService, Item, Order, OrderItem, OrderUser, PaginationModel, ServerStatusMessage, Status, StatusOption } from "@types";
+import { APIResponse, DeliveryType, IOrderRepository, IOrderService, IStatusRepository, IStatusService, NewOrder, NewOrderItem, Order, OrderDelivery, OrderItem, OrderStatusHistory, OrderUpdates, OrderUser, PaginationModel, ServerStatusMessage, Status, StatusDoc, StatusOption } from "@types";
 import { isAValidId } from "@utils";
 
 const orderRepository: IOrderRepository = new OrderRepository;
@@ -17,11 +17,12 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
   const limit: number = Number(query.limit);
   
   try {
+    /* Validate if come query params. */
     if (Object.values(query).length === 0) {
       const items = await orderService.findOrders();
       if (items.length === 0) {
-        res.status(404).json({
-          status: ServerStatusMessage.NOT_FOUND,
+        res.status(200).json({
+          status: ServerStatusMessage.OK,
           msg: "No orders found.",
           data: {
             items,
@@ -64,8 +65,8 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
 
     /* Validate if there isn't orders. */
     if (items.length === 0) {
-      res.status(404).json({
-        status: ServerStatusMessage.NOT_FOUND,
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
         data: {
           items,
           totalItems: items.length,
@@ -100,6 +101,7 @@ const findOrdersStatsByMonth = async (req: Request, res: Response<APIResponse>):
   const year: number = Number(query.year);
   const month: number = Number(query.month);
 
+  /* Validate that year and month values don't be falsy values. */
   if (!year || !month) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -118,6 +120,7 @@ const findOrdersStatsByMonth = async (req: Request, res: Response<APIResponse>):
   const endOfLasMonth = new Date(Date.UTC(year, month - 1, 0, 23, 59, 59, 999));
 
   try {
+    /* Find orders by a range date and total orders. */
     const [currentMonthItems, lastMonthItems, totalItems] = await Promise.all([
       orderService.findOrders({
         createdAt: {
@@ -141,7 +144,7 @@ const findOrdersStatsByMonth = async (req: Request, res: Response<APIResponse>):
     });
     
     /* Calculate month sales growth rate. */
-    const { currentMonthSalesAmount, lastMonthSalesAmount, salesGrowthRate } = calculateSalesRate({
+    const { currentMonthSalesAmount, lastMonthSalesAmount, salesGrowthRate } = calculateSalesGrowthRate({
       currentMonthItems,
       lastMonthItems,
     });
@@ -180,6 +183,7 @@ const findOrdersStatsByMonth = async (req: Request, res: Response<APIResponse>):
 const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
+  /* Validate order id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -191,8 +195,9 @@ const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<
   };
 
   try {
-    const order = await orderService.findOrderById(id);
-    if (!order) {
+    /* Validate that order exists. */
+    const orderExists = await orderService.findOrderById(id);
+    if (!orderExists) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
         msg: "Not order found.",
@@ -200,10 +205,10 @@ const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<
 
       return;
     };
-
+    
     res.status(200).json({
       status: ServerStatusMessage.OK,
-      data: order,
+      data: orderExists,
     });
   } catch (error: any) {
     console.log("Error: ", error.message);
@@ -217,15 +222,20 @@ const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<
 const createOrder = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { userAuth, body } = req;
   const { firstName, lastName, address, phone, email } = userAuth;
-  const newOrder: Item[] = body;
-   
-  /* Validate that items don't contain properties with empty values. */
-  for (const item of newOrder) {
-    for (const key in item) {
-      if ((key !== "toppings") && String(item[key as keyof Item]).trim().length === 0) {
+  const newOrder: NewOrder = body;
+  const { items, deliveryType, notes } = newOrder;
+  
+  /* Validate that order don't come with falsy values. */
+  for (const key in newOrder) {
+    if (key === 'notes') continue;
+
+    const k = key as keyof NewOrder;
+
+    if ((typeof newOrder[k] === 'string') || Array.isArray(newOrder[k])) {
+      if (newOrder[k].length === 0) {
         res.status(400).json({
           status: ServerStatusMessage.BAD_REQUEST,
-          msg: "Item fields are required.",
+          msg: "Items pizza and Delivery option are required.",
         });
 
         return;
@@ -233,50 +243,61 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     };
   };
   
-  /* Validate that items don't come empties. */
-  for (const item of newOrder) {
-    if (Object.values(item).length === 0) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Item can not be an empty value.",
-      });
-
-      return;
+  /* Validate that items don't come with properties as falsy values. */
+  for (const item of items) {
+    for (const key in item) {
+      if (key === "toppings") continue;
+      
+      if ((String(item[key as keyof NewOrderItem]).trim().length === 0) || item["quantity"] <= 0) {
+        res.status(400).json({
+          status: ServerStatusMessage.BAD_REQUEST,
+          msg: "Pizza, Size and Quantity values are required.",
+        });
+        
+        return;
+      };
     };
   };
 
-  /* Validate that new order don't come empty. */
-  if (newOrder.length === 0) {
+  /* Validate that Delivery value be a valid Delivery option. */
+  if (!Object.values(DeliveryType).includes(deliveryType as DeliveryType)) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "At least 1 item is required.",
+      msg: `Delivery option should be: ${DeliveryType.Delivery} or ${DeliveryType.PickUp}.`,
     });
 
-    return;  
+    return;
   };
-
-  /* Validate that all required fields don't be an empty value. */
-  for (const item of newOrder) {
-    const { pizza, size, quantity } = item;
-
-    if (!pizza || !size || !quantity) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
-        msg: "A pizza, size and a quantity are required.",
+  
+  try {
+    /* Search for 'Pending' status wich is initial status for orders. */
+    const statusExists = await statusService.findStatusByName("Pending") as StatusDoc;
+    if (!statusExists) {
+      res.status(404).json({
+        status: ServerStatusMessage.NOT_FOUND,
+        msg: "Status not found.",
       });
-            
       return;
     };
-  };
 
-  try {
-    /* Build order. */
+    /* Build order properties. */
     const user: OrderUser = { firstName, lastName, address, phone, email };
-    const items: OrderItem[] = await formatOrderItems(newOrder);
-    const status: Status = await statusService.findStatusByName("Pending") as Status;
-    const total: number = calculateTotalOrder(items);
+    const orderItems: OrderItem[] = await formatOrderItems(items);
+    const delivery: OrderDelivery = { type: deliveryType, estimatedTime: 20 };
+    const status: string = statusExists._id as string;
+    const statusHistory: OrderStatusHistory[] = [addNewStatusHistory(statusExists)];
+    const total: number = calculateTotalOrder(orderItems);
 
-    const orderCreated: Order = await orderService.createOrder({ user, items, status, total });
+    /* Create order. */
+    const orderCreated: Order = await orderService.createOrder({
+      user,
+      items: orderItems,
+      delivery,
+      status,
+      statusHistory,
+      notes,
+      total,
+    });
 
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
@@ -293,76 +314,148 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
 };
 
 const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<void> => {
-  const { id } = req.params;
-  const updates = req.body;
+  const { body, params } = req;
+  const { status, deliveryType, notes }: OrderUpdates = body;
+  const { id } = params;
 
-  const validId = isAValidId(id);
-  if (!validId) {
+  /* Validate order id. */
+  const validOrderId = isAValidId(id);
+  if (!validOrderId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid order Id.",
+    });
+
+    return;
+  };
+  
+  /* Validate if don't come changes. */
+  if (Object.values(body).length === 0) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: "At least 1 change is required.",
+    });
+
+    return;
+  };
+
+  /* Validate if deliveryType come in updates don't be different of a DeliveryType option. */
+  if (("deliveryType" in body) && !Object.values(DeliveryType).includes(deliveryType as DeliveryType)) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: `Delivery option should be: ${DeliveryType.Delivery} or ${DeliveryType.PickUp}.`,
+    });
+
+    return;
+  };
+
+  /* Validate if notes come in updates dont't different of a string. */
+  if (("notes" in body) && (typeof notes !== "string") || (notes?.length === 0)) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: "Notes should be a valid text.",
+    });
+
+    return;
+  };
+  
+  /* Validate if status come in updates don't be an invalid status id. */
+  const validStatusId = isAValidId(status as string);
+  if (("status" in body) && !validStatusId) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: "Status should be a valid Status id.",
     });
 
     return;
   };
 
   try {
-    const [orderExists, statusExists] = await Promise.all([
-      orderService.findOrderById(id),
-      statusRepository.findById(updates.status),
-    ]);
-
+    /* Validate if order don't exists. */
+    const orderExists = await orderService.findOrderById(id);
     if (!orderExists) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
         msg: "Not order found.",
       });
-
-      return;
-    };
-
-    /* Avoid cancel an order if its status is set as "In progress" or "Done". */
-    if (statusExists!.name === StatusOption["Cancelled"] && (orderExists.status.name === StatusOption["InProgress"] || orderExists.status.name === StatusOption["Done"])) {
-      res.status(200).json({
-        status: ServerStatusMessage.OK,
-        msg: "The order can not to be cancelled.",
-      });
-
+      
       return;
     };
     
-    /* Avoid change order status if already has been set as "Cancelled". */
-    if (statusExists!.name !== StatusOption["Cancelled"] && orderExists.status.name === StatusOption["Cancelled"]) {
-      res.status(200).json({
-        status: ServerStatusMessage.OK,
-        msg: "The order already has been cancelled.",
+    /* Validate if status don't exists. */
+    const currentOrderStatus = (orderExists.status as StatusDoc);
+    const newOrderStatus = await statusService.findStatusById( status as string ?? currentOrderStatus._id as string);
+    if (!newOrderStatus) {
+      res.status(404).json({
+        status: ServerStatusMessage.NOT_FOUND,
+        msg: "Status not found",
       });
-
-      return;
-    };
-
-    /* Avoid set status to "Pending" to an order that has status "In progress", "Done" or "Cancelled". */
-    if (statusExists!.name === StatusOption["Pending"] && orderExists.status.name !== StatusOption["Pending"]) {
-      res.status(200).json({
-        status: ServerStatusMessage.OK,
-        msg: "The order can no longer be changed to Pending.",
-      });
-
+      
       return;
     };
     
-    /* Avoid change order status if already has been set as "Done". */
-    if (statusExists!.name !== StatusOption["Done"] && orderExists.status.name === StatusOption["Done"]) {
-      res.status(200).json({
-        status: ServerStatusMessage.OK,
-        msg: "The order can no longer change its status because already is Done.",
+    /* Avoid cancel an order if its status is different of "Pending". */
+    if ((currentOrderStatus.name !== StatusOption.Pending) && (newOrderStatus.name === StatusOption.Cancelled)) {
+      res.status(409).json({
+        status: ServerStatusMessage.CONFLICT,
+        msg: `The order can not be cancelled because its current status is: ${(orderExists.status as Status).name}.`,
       });
 
       return;
     };
 
-    const orderUpdated = await orderService.updateOrder(id, updates) as Order;
+    /* Avoid update the order if its status is "Cancelled". */
+    if ((currentOrderStatus.name === StatusOption.Cancelled) && (Object.values(body).length > 0)) {
+      res.status(409).json({
+        status: ServerStatusMessage.CONFLICT,
+        msg: "The order can not be updated because already has been cancelled.",
+      });
 
+      return;
+    };
+
+    /* Avoid updates from customer if order status is "On the way". */
+    if ((deliveryType || notes) && (currentOrderStatus.name === StatusOption.OnTheWay)) {
+      res.status(409).json({
+        status: ServerStatusMessage.CONFLICT,
+        msg: `The order not longer accept updates because is ${StatusOption.OnTheWay}.`,
+      });
+
+      return;
+    };
+
+    /* Avoid that status can be setted different of "Delivered" if current order status is "On the way". */
+    if (status && (newOrderStatus.name !== StatusOption.Delivered) && (currentOrderStatus.name === StatusOption.OnTheWay)) {
+      res.status(409).json({
+        status: ServerStatusMessage.CONFLICT,
+        msg: `Status only can be set to '${StatusOption.Delivered}' because the current order status is '${StatusOption.OnTheWay}'.`,
+      });
+
+      return;
+    };
+
+    /* Add new status to statusHistory validating that new status doesn't exists in statusHistory. */
+    const statusHistory = orderExists.statusHistory;
+    const statusHistoryNames: string[] = [];
+    for (const history of statusHistory) {
+      statusHistoryNames.push(history.name);
+    };
+    if (!statusHistoryNames.includes(newOrderStatus.name)) {
+      statusHistory.push(addNewStatusHistory(newOrderStatus));
+    };
+
+    /* Build order updates. */
+    const updates: Partial<Order> = {
+      status,
+      statusHistory,
+      delivery: {
+        type: deliveryType || orderExists.delivery.type,
+        estimatedTime: orderExists.delivery.estimatedTime,
+      },
+      notes,
+    };
+    const orderUpdated = await orderService.updateOrder(id, updates);
+    
     res.status(200).json({
       status: ServerStatusMessage.UPDATED,
       msg: "Order updated successfully.",
@@ -397,7 +490,7 @@ const deleteOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
         status: ServerStatusMessage.NOT_FOUND,
         msg: "Not order found.",
       });
-
+      
       return;
     };
 

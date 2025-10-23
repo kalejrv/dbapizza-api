@@ -1,7 +1,6 @@
-import { Document } from "mongoose";
-import { Query, Repository } from "./repositoryTypes";
+import { Query, Repository } from "@types";
 
-export interface Role extends Document {
+export interface Role {
   name: string;
   permissions: string[];
 };

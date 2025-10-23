@@ -194,8 +194,8 @@ const updateStatus = async (req: Request, res: Response<APIResponse>): Promise<v
 
     const statusUpdated = await statusService.updateStatus(id, updates);
 
-    res.status(201).json({
-      status: ServerStatusMessage.CREATED,
+    res.status(200).json({
+      status: ServerStatusMessage.UPDATED,
       msg: "Status updated successfully.",
       data: statusUpdated,
     });

@@ -1,5 +1,5 @@
-import mongoose, { Schema, Types } from "mongoose";
-import { Order, OrderItem, OrderUser, ToppingsDetail } from "@types";
+import mongoose, { Schema } from "mongoose";
+import { DeliveryType, Order, OrderDelivery, OrderItem, OrderStatusHistory, OrderUser, StatusOption } from "@types";
 
 const OrderUserSchema: Schema = new Schema<OrderUser>({
   firstName: {
@@ -24,26 +24,27 @@ const OrderUserSchema: Schema = new Schema<OrderUser>({
   },
 });
 
-const ToppingsDetailSchema: Schema = new Schema<ToppingsDetail>({
-  toppings: [{
-    type: Types.ObjectId,
-    ref: "Toppings",
-  }],
-  toppingsTotalPrice: {
-    type: Number,
-    required: true,
-  },
-});
-
 const OrderItemSchema: Schema = new Schema<OrderItem>({
   pizza: {
-    type: Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "Pizzas",
     required: true,
   },
-  toppingsDetail: {
-    type: ToppingsDetailSchema,
-    required: false,
+  size: {
+    type: Schema.Types.ObjectId,
+    ref: "Sizes",
+    required: true,
+  },
+  extra: {
+    toppings: [{
+      type: Schema.Types.ObjectId,
+      ref: "Toppings",
+      required: false,
+    }],
+    total: {
+      type: Number,
+      required: false,
+    },
   },
   quantity: {
     type: Number,
@@ -51,6 +52,30 @@ const OrderItemSchema: Schema = new Schema<OrderItem>({
   },
   total: {
     type: Number,
+    required: true,
+  },
+});
+
+const OrderDeliverySchema: Schema = new Schema<OrderDelivery>({
+  type: {
+    type: String,
+    enum: Object.values(DeliveryType),
+    required: true,
+  },
+  estimatedTime: {
+    type: Number,
+    required: true,
+  },
+});
+
+const OrderStatusHistorySchema: Schema = new Schema<OrderStatusHistory>({
+  name: {
+    type: String,
+    enum: Object.values(StatusOption),
+    required: true,
+  },
+  timestamp: {
+    type: Date,
     required: true,
   },
 });
@@ -122,10 +147,22 @@ const OrderSchema: Schema = new Schema<Order>({
     type: [OrderItemSchema],
     required: true,
   },
+  delivery: {
+    type: OrderDeliverySchema,
+    required: true,
+  },
   status: {
-    type: Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "Status",
     required: true,
+  },
+  statusHistory: {
+    type: [OrderStatusHistorySchema],
+    required: true,
+  },
+  notes: {
+    type: String,
+    required: false,
   },
   total: {
     type: Number,

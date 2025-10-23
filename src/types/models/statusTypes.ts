@@ -1,9 +1,11 @@
-import { Query, Repository } from "./repositoryTypes";
+import { Query, Repository } from "@types";
 
 export enum StatusOption {
   Pending = "Pending",
-  InProgress = "In progress",
+  Preparing = "Preparing",
   Done = "Done",
+  OnTheWay = "On the way",
+  Delivered = "Delivered",
   Cancelled = "Cancelled",
 };
 

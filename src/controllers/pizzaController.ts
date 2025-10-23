@@ -5,6 +5,7 @@ import { FlavorService, PizzaService, SizeService } from "@services";
 import { APIResponse, IFlavorRepository, IFlavorService, IPizzaRepository, IPizzaService, ISizeRepository, ISizeService, PaginationModel, Pizza, ServerStatusMessage } from "@types";
 import { isAValidId } from "@utils";
 import config from "@config/config";
+import { Document } from "mongoose";
 
 const pizzaRepository: IPizzaRepository = new PizzaRepository();
 const pizzaService: IPizzaService = new PizzaService(pizzaRepository);
@@ -126,7 +127,8 @@ const findPizzaById = async (req: Request, res: Response<APIResponse>): Promise<
 
     res.status(200).json({
       status: ServerStatusMessage.OK,
-      data: pizzaWithPrice(pizza),
+      /* TODO: 'Pizza & Document type is a temporal fix. Create this as a type.' */
+      data: pizzaWithPrice(pizza as Pizza & Document),
     });
   } catch (error: any) {
     console.log("Error: ", error.message);
@@ -210,6 +212,7 @@ const createPizza = async (req: Request, res: Response<APIResponse>): Promise<vo
       ...newPizza,
       flavor: flavorExists,
       size: sizeExists,
+      price: flavorExists.price = sizeExists.price,
       image: pizzaImageName,
     });
 

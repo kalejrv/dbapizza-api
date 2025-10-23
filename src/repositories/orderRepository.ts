@@ -11,11 +11,12 @@ export class OrderRepository implements IOrderRepository {
     return await OrderModel
       .find(query || {})
       .select("-createdAt -updatedAt")
-      .populate("status", "-_id -createdAt -updatedAt")
       .populate("items.pizza", "-_id -createdAt -updatedAt")
-      .populate("items.toppingsDetail.toppings", "-_id -createdAt -updatedAt")
+      .populate("items.size", "-_id -createdAt -updatedAt")
+      .populate("items.extra.toppings", "-_id -createdAt -updatedAt")
+      .populate("status", "-_id -createdAt -updatedAt")
       .exec();
-    };
+  };
   
   async findCount(query?: Query): Promise<number> {
     return await OrderModel.countDocuments(query);
@@ -25,18 +26,20 @@ export class OrderRepository implements IOrderRepository {
     return await OrderModel
       .findById(id)
       .select("-createdAt -updatedAt")
-      .populate("status", "-_id -createdAt -updatedAt")
       .populate("items.pizza", "-_id -createdAt -updatedAt")
-      .populate("items.toppingsDetail.toppings", "-_id -createdAt -updatedAt")
+      .populate("items.size", "-_id -createdAt -updatedAt")
+      .populate("items.extra.toppings", "-_id -createdAt -updatedAt")
+      .populate("status", "-_id -createdAt -updatedAt")
       .exec();
   };
 
   async findOne(query: Query): Promise<Order | null> {
     return await OrderModel
       .findOne(query)
-      .populate("status")
       .populate("items.pizza")
-      .populate("items.toppingsDetail.toppings")
+      .populate("items.size")
+      .populate("items.extra.toppings")
+      .populate("status")
       .exec();
   };
   
@@ -44,9 +47,10 @@ export class OrderRepository implements IOrderRepository {
     return await OrderModel
       .findByIdAndUpdate(id, data, { new: true })
       .select("-createdAt -updatedAt")
-      .populate("status", "-_id -createdAt -updatedAt")
       .populate("items.pizza", "-_id -createdAt -updatedAt")
-      .populate("items.toppingsDetail.toppings", "-_id -createdAt -updatedAt")
+      .populate("items.size", "-_id -createdAt -updatedAt")
+      .populate("items.extra.toppings", "-_id -createdAt -updatedAt")
+      .populate("status", "-_id -createdAt -updatedAt")
       .exec();
   };
 
