@@ -31,6 +31,7 @@ export interface OrderStatusHistory extends Pick<Status, "name"> {
 };
 
 export type Order = {
+  code: string;
   user: OrderUser;
   items: OrderItem[];
   delivery: OrderDelivery;

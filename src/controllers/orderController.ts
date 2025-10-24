@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { addNewStatusHistory, calculateItemsGrowthRate, calculateSalesGrowthRate, calculateTotalOrder, formatOrderItems, pagination } from "@helpers";
+import { addNewStatusHistory, calculateItemsGrowthRate, calculateSalesGrowthRate, calculateTotalOrder, createOrderCode, formatOrderItems, pagination } from "@helpers";
 import { OrderRepository, StatusRepository } from "@repositories";
 import { OrderService, StatusService } from "@services";
 import { APIResponse, DeliveryType, IOrderRepository, IOrderService, IStatusRepository, IStatusService, NewOrder, NewOrderItem, Order, OrderDelivery, OrderItem, OrderStatusHistory, OrderUpdates, OrderUser, PaginationModel, ServerStatusMessage, Status, StatusDoc, StatusOption } from "@types";
@@ -281,6 +281,7 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     };
 
     /* Build order properties. */
+    const code: string = createOrderCode({ firstName, lastName });
     const user: OrderUser = { firstName, lastName, address, phone, email };
     const orderItems: OrderItem[] = await formatOrderItems(items);
     const delivery: OrderDelivery = { type: deliveryType, estimatedTime: 20 };
@@ -290,6 +291,7 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
 
     /* Create order. */
     const orderCreated: Order = await orderService.createOrder({
+      code,
       user,
       items: orderItems,
       delivery,
@@ -298,7 +300,7 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
       notes,
       total,
     });
-
+    
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
       msg: "Order created successfully.",

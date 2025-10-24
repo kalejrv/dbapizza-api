@@ -173,6 +173,10 @@ const OrderStatusHistorySchema: Schema = new Schema<OrderStatusHistory>({
 *           example: 1250
 */
 const OrderSchema: Schema = new Schema<Order>({
+  code: {
+    type: String,
+    required: true,
+  },
   user: {
     type: OrderUserSchema,
     required: true,

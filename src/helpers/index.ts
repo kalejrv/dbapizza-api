@@ -9,3 +9,4 @@ export * from "./queryModel";
 export * from "./calculateItemsGrowthRate";
 export * from "./calculateSalesGrowthRate";
 export * from "./addNewStatusHistory";
+export * from "./createOrderCode";
