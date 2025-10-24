@@ -376,7 +376,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     if (!orderExists) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
-        msg: "Not order found.",
+        msg: "Order not found.",
       });
       
       return;
@@ -388,7 +388,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     if (!newOrderStatus) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
-        msg: "Status not found",
+        msg: "Status not found.",
       });
       
       return;

@@ -111,10 +111,14 @@ const OrderStatusHistorySchema: Schema = new Schema<OrderStatusHistory>({
 *             type: object
 *             properties:
 *               pizza:
-*                 type: string
+*                 type: Pizza | string
 *                 example: 679c57cd105154cb855d7fd3
-*                 Description: "A pizza id."
-*               toppingsDetail:
+*                 description: "A Pizza document or id."
+*               size:
+*                 type: Size | string
+*                 example: 679c57cd105154cb855d7fd3
+*                 description: "A Size document or id."
+*               extra:
 *                 type: object
 *                 properties:
 *                   toppings:
@@ -122,8 +126,8 @@ const OrderStatusHistorySchema: Schema = new Schema<OrderStatusHistory>({
 *                     items:
 *                       type: string
 *                       example: 6798077e96d97dd292904d2d
-*                       Description: "A topping id."
-*                   toppingsTotalPrice:
+*                       description: "A topping id."
+*                   total:
 *                     type: number
 *                     example: 220
 *               quantity:
@@ -132,8 +136,38 @@ const OrderStatusHistorySchema: Schema = new Schema<OrderStatusHistory>({
 *               total:
 *                 type: number
 *                 example: 850
+*         delivery:
+*           type: object
+*           properties:
+*             type:
+*               type: string
+*               example: "Delivery"
+*               description: "A delivery option."
+*             estimatedTime:
+*               type: number
+*               example: 20
+*               description: "Time in minutes to complete an order."             
 *         status:
-*           $ref: "#/components/schemas/Status"
+*           type: Status | string
+*           example: "6798077e96d97dd292904d2d" 
+*           description: "A Status document or id."
+*         statusHistory:
+*           type: array
+*           items:
+*             type: object
+*             properties:
+*               name:
+*                 type: string
+*                 example: "Pending"
+*                 description: "A Status name."
+*               timestamp:
+*                 type: Date
+*                 exmaple: 2025-10-20T18:16:12.000+00:00
+*                 description: "Date which the order was updated."
+*         notes:
+*           type: string
+*           example: "Call me when the order is done, please."
+*           description: "Customer notes."
 *         total:
 *           type: number
 *           example: 1250
