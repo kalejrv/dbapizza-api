@@ -4,7 +4,12 @@ import { IPizzaRepository, Pizza, Query } from "@types";
 export class PizzaRepository implements IPizzaRepository {
   async create(data: Pizza): Promise<Pizza> {
     const newPizza = new PizzaModel(data);
-    return await newPizza.save();
+    const savedPizza = await newPizza.save()
+    
+    await savedPizza.populate("flavor", "-_id -createdAt -updatedAt")
+    await savedPizza.populate("size", "-_id -createdAt -updatedAt")
+    
+    return savedPizza;
   };
 
   async find(query?: Query): Promise<Pizza[]> {

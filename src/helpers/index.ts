@@ -1,6 +1,5 @@
 export * from "./renamePizzaImage";
 export * from "./deletePizzaImage";
-export * from "./pizzasWithPrice";
 export * from "./calculatePizzaPrice";
 export * from "./formatOrderItems";
 export * from "./calculateTotalOrder";

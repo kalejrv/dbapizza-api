@@ -41,23 +41,23 @@ export const pizzaRoutes = (): Router => {
 *                 data:
 *                   type: object
 *                   properties:
-*                     pizzas:
-*                      type: array
-*                      items: 
-*                        $ref: "#/components/schemas/Pizza"
-*                     totalPizzas:
+*                     items:
+*                       type: array
+*                       items: 
+*                         $ref: "#/components/schemas/Pizza"
+*                     totalItems:
 *                       type: number
 *                       example: 50
-*                     pizzasByPage:
+*                     itemsByPage:
 *                       type: number
 *                       example: 10
-*                     currentPizzasQuantity:
+*                     currentItemsQuantity:
 *                       type: number
 *                       example: 10
 *                     currentPage:
 *                       type: number
 *                       example: 1
-*                     totalPage:
+*                     totalPages:
 *                       type: number
 *                       example: 5
 *       400:
@@ -73,19 +73,6 @@ export const pizzaRoutes = (): Router => {
 *                 msg:
 *                   type: string
 *                   example: Some error message.
-*       404:
-*         description: NOT FOUND
-*         content:
-*           application/json:
-*             schema:
-*               type: object
-*               properties:
-*                 status:
-*                   type: string
-*                   example: NOT_FOUND
-*                 msg:
-*                   type: string
-*                   example: Some error message.
 *       500:
 *         description: FAILED
 *         content:
@@ -96,8 +83,9 @@ export const pizzaRoutes = (): Router => {
 *                 status: 
 *                   type: string
 *                   example: FAILED
-*                 error:
-*                   type: object
+*                 msg:
+*                   type: string
+*                   example: Some error message.
 */
   router.get(`${basePath}`, findPizzas);
 
@@ -168,8 +156,9 @@ export const pizzaRoutes = (): Router => {
 *                 status: 
 *                   type: string
 *                   example: FAILED
-*                 error:
-*                   type: object
+*                 msg:
+*                   type: string
+*                   example: Some error message.
 */
   router.get(`${basePath}/:id`, findPizzaById);
 
@@ -193,10 +182,7 @@ export const pizzaRoutes = (): Router => {
 *             properties:
 *               flavor:
 *                 type: string
-*                 description: A flavor id.
-*               size:
-*                 type: string
-*                 description: A size id.
+*                 description: A Flavor id.
 *               pizza_image:
 *                 type: file
 *                 description: A pizza image.
@@ -230,6 +216,19 @@ export const pizzaRoutes = (): Router => {
 *                 msg:
 *                   type: string
 *                   example: Some error message.
+*       409:
+*         description: CONFLICT
+*         content:
+*           application/json:
+*             schema:
+*               type: object
+*               properties:
+*                 status:
+*                   type: string
+*                   example: CONFLICT
+*                 msg:
+*                   type: string
+*                   example: Some error message.
 *       500:
 *         description: FAILED
 *         content:
@@ -240,8 +239,9 @@ export const pizzaRoutes = (): Router => {
 *                 status: 
 *                   type: string
 *                   example: FAILED
-*                 error:
-*                   type: object
+*                 msg:
+*                   type: string
+*                   example: Some error message.
 */
   router.post(`${basePath}`, verifyUserAuth, checkUserPermissions, uploadPizzaImage.single("pizza_image"), createPizza);
   
@@ -274,8 +274,8 @@ export const pizzaRoutes = (): Router => {
 *                 type: file
 *                 description: A pizza image.
 *     responses:
-*       201:
-*         description: CREATED
+*       200:
+*         description: OK
 *         content:
 *           application/json:
 *             schema:
@@ -283,7 +283,7 @@ export const pizzaRoutes = (): Router => {
 *               properties:
 *                 status:
 *                   type: string
-*                   example: CREATED
+*                   example: OK
 *                 msg:
 *                   type: string
 *                   example: Pizza updated successfully.
@@ -326,8 +326,9 @@ export const pizzaRoutes = (): Router => {
 *                 status: 
 *                   type: string
 *                   example: FAILED
-*                 error:
-*                   type: object
+*                 msg:
+*                   type: string
+*                   exmaple: Some error message.
 */
   router.patch(`${basePath}/:id`, verifyUserAuth, checkUserPermissions, uploadPizzaImage.single("pizza_image"), updatePizza);
   

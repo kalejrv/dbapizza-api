@@ -44,14 +44,14 @@ const findPizzas = async (limit: number, skip: number): Promise<QueryModel<Pizza
     PizzaModel
       .find({})
       .select("-createdAt -updatedAt")
-      .populate("flavor", "-createdAt -updatedAt")
-      .populate("size", "-createdAt -updatedAt")
+      .populate("flavor", "-_id -createdAt -updatedAt")
+      .populate("size", "-_id -createdAt -updatedAt")
       .skip(skip)
       .limit(limit)
       .sort({ size: -1 })
       .exec(),
   ]);
-
+  
   return {
     totalModelItems,
     modelItems,

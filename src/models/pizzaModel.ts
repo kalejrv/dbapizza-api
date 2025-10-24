@@ -11,12 +11,19 @@ import { Pizza } from "@types";
 *         flavor: 
 *           type: string
 *           example: 679488d052da6f6ec1998cc3
+*           description: A flavor id.
 *         size:
 *           type: string
-*           example: 679488d052da6f6ec1998cc3
+*           example: 6798425fe2bc79512193360a
+*           description: A size id.
 *         image:
 *           type: string
 *           example: image.jpg
+*           description: Pizza image as reference of flavor.
+*         price:
+*           type: number
+*           example: 200
+*           description: Flavor price + Size price.
 */
 const PizzaSchema: Schema = new Schema<Pizza>({
   flavor: {
