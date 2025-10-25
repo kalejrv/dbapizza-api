@@ -1,5 +1,5 @@
 import { OrderItem } from "@types";
 
-export interface NewOrderItem extends Pick<OrderItem, 'pizza' | 'size' | 'quantity'> {
+export interface NewOrderItem extends Pick<OrderItem, 'pizza' | 'selectedSize' | 'quantity'> {
   toppings?: string[];
 };

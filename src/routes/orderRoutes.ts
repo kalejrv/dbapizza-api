@@ -292,7 +292,7 @@ export const orderRoutes = (): Router => {
 *                     pizza:
 *                       type: string
 *                       example: 67e36132d4956342ce2cf750
-*                     size:
+*                     selectedSize:
 *                       type: string
 *                       example: 6798434de2bc795121933635
 *                     toppings:

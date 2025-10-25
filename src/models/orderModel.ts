@@ -30,7 +30,7 @@ const OrderItemSchema: Schema = new Schema<OrderItem>({
     ref: "Pizzas",
     required: true,
   },
-  size: {
+  selectedSize: {
     type: Schema.Types.ObjectId,
     ref: "Sizes",
     required: true,
@@ -114,7 +114,7 @@ const OrderStatusHistorySchema: Schema = new Schema<OrderStatusHistory>({
 *                 type: Pizza | string
 *                 example: 679c57cd105154cb855d7fd3
 *                 description: "A Pizza document or id."
-*               size:
+*               selectedSize:
 *                 type: Size | string
 *                 example: 679c57cd105154cb855d7fd3
 *                 description: "A Size document or id."

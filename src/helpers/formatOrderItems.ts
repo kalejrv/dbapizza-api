@@ -19,14 +19,15 @@ export const formatOrderItems = async (items: NewOrderItem[]): Promise<OrderItem
         /* Find pizza and size. */
         const [pizzaExists, sizeExists] = await Promise.all([
           pizzaService.findPizzaById(item.pizza as string),
-          sizeService.findSizeById(item.size as string),
+          sizeService.findSizeById(item.selectedSize as string),
         ]);
         
-        /* Assign size selected by user to pizza and calculate its total price. */
+        /* Validate if pizza or size don't exists. */
         if (!pizzaExists || !sizeExists) throw new Error(`Pizza or Size were not found.`);
-        pizzaExists.size = sizeExists;
+        
+        /* Calculate pizza total price. */
         const size = sizeExists as SizeDoc;
-        const pizza = calculatePizzaPrice(pizzaExists as PizzaDoc);
+        const pizza = calculatePizzaPrice(pizzaExists as PizzaDoc, size);
 
         /* Find toppings and calculate its total price. */
         let toppings: string[] = [];
@@ -48,7 +49,7 @@ export const formatOrderItems = async (items: NewOrderItem[]): Promise<OrderItem
         
         return {
           pizza: pizza._id as string,
-          size: size._id as string,
+          selectedSize: size._id as string,
           extra: {
             toppings,
             total: toppingsTotalPrice,

@@ -10,9 +10,16 @@ export class OrderRepository implements IOrderRepository {
   async find(query?: Query): Promise<Order[]> {
     return await OrderModel
       .find(query || {})
-      .select("-createdAt -updatedAt")
-      .populate("items.pizza", "-_id -createdAt -updatedAt")
-      .populate("items.size", "-_id -createdAt -updatedAt")
+      .select("-updatedAt")
+      .populate({
+        path: "items.pizza",
+        select: "-createdAt -updatedAt",
+        populate: [
+          { path: "flavor", select: "-_id -createdAt -updatedAt" },
+          { path: "size", select: "-_id -createdAt -updatedAt" },
+        ],
+      })
+      .populate("items.selectedSize", "-_id -createdAt -updatedAt")
       .populate("items.extra.toppings", "-_id -createdAt -updatedAt")
       .populate("status", "-_id -createdAt -updatedAt")
       .exec();
@@ -25,9 +32,16 @@ export class OrderRepository implements IOrderRepository {
   async findById(id: string): Promise<Order | null> {
     return await OrderModel
       .findById(id)
-      .select("-createdAt -updatedAt")
-      .populate("items.pizza", "-_id -createdAt -updatedAt")
-      .populate("items.size", "-_id -createdAt -updatedAt")
+      .select("-updatedAt")
+      .populate({
+        path: "items.pizza",
+        select: "-createdAt -updatedAt",
+        populate: [
+          { path: "flavor", select: "-_id -createdAt -updatedAt" },
+          { path: "size", select: "-_id -createdAt -updatedAt" },
+        ],
+      })
+      .populate("items.selectedSize", "-createdAt -updatedAt")
       .populate("items.extra.toppings", "-_id -createdAt -updatedAt")
       .populate("status", "-_id -createdAt -updatedAt")
       .exec();
@@ -36,8 +50,14 @@ export class OrderRepository implements IOrderRepository {
   async findOne(query: Query): Promise<Order | null> {
     return await OrderModel
       .findOne(query)
-      .populate("items.pizza")
-      .populate("items.size")
+      .populate({
+        path: "items.pizza",
+        populate: [
+          { path: "flavor" },
+          { path: "size" },
+        ],
+      })
+      .populate("items.selectedSize")
       .populate("items.extra.toppings")
       .populate("status")
       .exec();
@@ -47,8 +67,15 @@ export class OrderRepository implements IOrderRepository {
     return await OrderModel
       .findByIdAndUpdate(id, data, { new: true })
       .select("-createdAt -updatedAt")
-      .populate("items.pizza", "-_id -createdAt -updatedAt")
-      .populate("items.size", "-_id -createdAt -updatedAt")
+      .populate({
+        path: "items.pizza",
+        select: "-createdAt -updatedAt",
+        populate: [
+          { path: "flavor", select: "-_id -createdAt -updatedAt" },
+          { path: "size", select: "-_id -createdAt -updatedAt" },
+        ],
+      })
+      .populate("items.selectedSize", "-_id -createdAt -updatedAt")
       .populate("items.extra.toppings", "-_id -createdAt -updatedAt")
       .populate("status", "-_id -createdAt -updatedAt")
       .exec();

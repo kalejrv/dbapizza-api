@@ -1,10 +1,8 @@
-import { PizzaDoc } from "@types";
+import { Flavor, PizzaDoc, Size, SizeDoc } from "@types";
 
-export const calculatePizzaPrice = (pizza: PizzaDoc): PizzaDoc => {
-  const { flavor, size } = pizza;
-  
+export const calculatePizzaPrice = (pizza: PizzaDoc, size: SizeDoc): PizzaDoc => {
   return {
     ...pizza.toObject(),
-    price: flavor.price + size.price,
+    price: (pizza.flavor as Flavor).price + (size as Size).price,
   };
 };

@@ -6,7 +6,7 @@ export type OrderUser = Pick<User, "firstName" | "lastName" | "address" | "phone
 /* Item. */
 export type OrderItem = {
   pizza: Pizza | string;
-  size: Size | string;
+  selectedSize: Size | string;
   extra?: {
     toppings: string[],
     total: number,

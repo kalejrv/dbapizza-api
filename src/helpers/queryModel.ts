@@ -63,11 +63,18 @@ const findOrders = async (limit: number, skip: number): Promise<QueryModel<Order
     OrderModel.countDocuments(),
     OrderModel
       .find({})
-      .select("-createdAt -updatedAt")
-      .populate("items.pizza", "-_id -createdAt -updatedAt")
-      .populate("items.size", "-_id -createdAt -updatedAt")
-      .populate("items.extra.toppings", "-_id -createdAt -updatedAt")
-      .populate("status", "-_id -createdAt -updatedAt")
+      .select("-updatedAt")
+      .populate({
+        path: "items.pizza",
+        select: "-createdAt -updatedAt",
+        populate: [
+          { path: "flavor", select: "-createdAt -updatedAt" },
+          { path: "size", select: "-createdAt -updatedAt" },
+        ],
+      })
+      .populate("items.selectedSize", "-createdAt -updatedAt")
+      .populate("items.extra.toppings", "-createdAt -updatedAt")
+      .populate("status", "-createdAt -updatedAt")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
