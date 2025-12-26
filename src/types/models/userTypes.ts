@@ -7,7 +7,7 @@ export interface User {
   phone: string;
   email: string;
   password: string;
-  role: Role;
+  role: Role | string;
   hashPassword(password: string): Promise<string>;
   comparePassword(password: string): Promise<boolean>;
 };

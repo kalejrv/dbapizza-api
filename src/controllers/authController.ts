@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { RoleRepository, UserRepository } from "@repositories";
 import { RoleService, UserService } from "@services";
-import { APIResponse, IRoleRepository, IRoleService, IUserRepository, IUserService, Role, ServerStatusMessage, User } from "@types";
+import { APIResponse, IRoleRepository, IRoleService, IUserRepository, IUserService, NewUser, Role, RoleDoc, ServerStatusMessage, User, UserDoc } from "@types";
 import { createToken } from "@utils";
 
 const userRepository: IUserRepository = new UserRepository();
@@ -13,8 +13,9 @@ const roleService: IRoleService = new RoleService(roleRepository);
 const signupUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   let newUser: User = req.body;
   
+  /* Validate that values from request don't be empty values. */
   for (const key in newUser) {
-    if (newUser[key as keyof User].length === 0) {
+    if (newUser[key as keyof NewUser].length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "All fields are required.",
@@ -25,6 +26,7 @@ const signupUser = async (req: Request, res: Response<APIResponse>): Promise<voi
   };
 
   try {
+    /* Validate that if user already exists don't register them.  */
     const userExists = await userService.findUserByEmail(newUser.email);
     if (userExists) {
       res.status(409).json({
@@ -35,30 +37,33 @@ const signupUser = async (req: Request, res: Response<APIResponse>): Promise<voi
       return;
     };
 
-    const clientRole = await roleService.findRoleByName("client") as Role;
-    newUser.role = clientRole.id;
+    /* Assign 'client' role to new user. */
+    const clientRole = await roleService.findRoleByName("client") as RoleDoc;
+    const userRole = clientRole._id.toString();
 
-    const user = await userService.createUser(newUser);
+    /* Create new user record. */
+    const user = await userService.createUser({ ...newUser, role: userRole }) as UserDoc;
     const { firstName, lastName, address, phone, email, role } = user;
-    const token = createToken( { id: user.id });
+    const token = createToken( { id: user._id.toString() });
 
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
       data: {
-        msg: `Welcome, ${user.firstName} ${user.lastName}! You has been registered successfully.`,
+        msg: `Welcome, ${firstName} ${lastName}! You has been registered successfully.`,
         user: {
           firstName,
           lastName,
           address,
           phone,
           email,
-          role: role.name,
+          role: (role as Role).name,
         },
         token,
       },
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
       msg: error.message,
@@ -69,17 +74,19 @@ const signupUser = async (req: Request, res: Response<APIResponse>): Promise<voi
 const signinUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { body, body: { email, password } } = req;
   
+  /* Validate that email and password don't be empty values. */
   if ((Object.values(body).length === 0) || !email || !password) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "E-mail and password are required.",
+      msg: "E-mail and Password are required.",
     });
 
     return;
   };
   
   try {
-    const userExists = await userService.findUserByEmail(email);
+    /* Validate that user exists. */
+    const userExists = await userService.findUserByEmail(email) as UserDoc;
     if (!userExists) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
@@ -89,6 +96,7 @@ const signinUser = async (req: Request, res: Response<APIResponse>): Promise<voi
       return;
     };
 
+    /* Validate that password from request matches user password. */
     const passwordMatch = await userExists.comparePassword(password);
     if (!passwordMatch) {
       res.status(400).json({
@@ -99,8 +107,9 @@ const signinUser = async (req: Request, res: Response<APIResponse>): Promise<voi
       return;
     };
 
-    const token = createToken({ id: userExists.id });
-    const { firstName, lastName, address, phone } = userExists;
+    /* Create token for start loggin session. */
+    const token = createToken({ id: userExists._id.toString() });
+    const { firstName, lastName, address, phone, role } = userExists;
 
     res.status(200).json({
       status: ServerStatusMessage.OK,
@@ -112,13 +121,14 @@ const signinUser = async (req: Request, res: Response<APIResponse>): Promise<voi
           address,
           phone,
           email,
-          role: userExists.role.name,
+          role: (role as Role).name,
         },
         token,
       },
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
       msg: error.message,
