@@ -1,6 +1,6 @@
 /* Create Token. */
-export interface Payload {
-  id: string;
+export type TokenPayload = {
+  userId: string;
 };
 
 /* Make all optional all properties of a type. */

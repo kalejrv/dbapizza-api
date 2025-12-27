@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { RoleRepository, UserRepository } from "@repositories";
 import { RoleService, UserService } from "@services";
-import { APIResponse, IRoleRepository, IRoleService, IUserRepository, IUserService, NewUser, Role, RoleDoc, ServerStatusMessage, User, UserDoc } from "@types";
+import { APIResponse, IRoleRepository, IRoleService, IUserRepository, IUserService, NewUser, Role, RoleDoc, ServerStatusMessage, TokenPayload, User, UserDoc } from "@types";
 import { createToken } from "@utils";
 
 const userRepository: IUserRepository = new UserRepository();
@@ -44,8 +44,11 @@ const signupUser = async (req: Request, res: Response<APIResponse>): Promise<voi
     /* Create new user record. */
     const user = await userService.createUser({ ...newUser, role: userRole }) as UserDoc;
     const { firstName, lastName, address, phone, email, role } = user;
-    const token = createToken( { id: user._id.toString() });
-
+    
+    /* Create user session token. */
+    const payload: TokenPayload = { userId: user._id.toString() };
+    const token = createToken(payload);
+    
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
       data: {
@@ -106,10 +109,11 @@ const signinUser = async (req: Request, res: Response<APIResponse>): Promise<voi
 
       return;
     };
-
-    /* Create token for start loggin session. */
-    const token = createToken({ id: userExists._id.toString() });
+    
+    /* Create user session token. */
     const { firstName, lastName, address, phone, role } = userExists;
+    const payload: TokenPayload = { userId: userExists._id.toString() };
+    const token = createToken(payload);
 
     res.status(200).json({
       status: ServerStatusMessage.OK,

@@ -25,7 +25,7 @@ export class UserRepository implements IUserRepository {
     return await UserModel
       .findById(id)
       .select("-password -createdAt -updatedAt")
-      .populate("role", "-createdAt -updatedAt")
+      .populate("role", "-_id -createdAt -updatedAt")
       .exec();
   };
 
