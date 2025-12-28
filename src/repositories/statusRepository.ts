@@ -8,23 +8,35 @@ export class StatusRepository implements IStatusRepository {
   };
 
   async find(query?: Query): Promise<Status[]> {
-    return await StatusModel.find(query || {}).exec();
+    return await StatusModel
+      .find(query || {})
+      .exec();
   };
 
   async findById(id: string): Promise<Status | null> {
-    return await StatusModel.findById(id).exec();
+    return await StatusModel
+      .findById(id)
+      .exec();
   };
 
   async findOne(query: Query): Promise<Status | null> {
-    return await StatusModel.findOne(query).select("-createdAt -updatedAt").exec();
+    return await StatusModel
+      .findOne(query)
+      .select("-createdAt -updatedAt")
+      .exec();
   };
 
   async update(id: string, data: Partial<Status>): Promise<Status | null> {
-    return await StatusModel.findByIdAndUpdate(id, data, { new: true }).exec();
+    return await StatusModel
+      .findByIdAndUpdate(id, data, { new: true })
+      .exec();
   };
 
   async delete(id: string): Promise<boolean> {
-    const statusDeleted = await StatusModel.findByIdAndDelete(id).exec();
+    const statusDeleted = await StatusModel
+      .findByIdAndDelete(id)
+      .exec();
+    
     return statusDeleted !== null;
   };
 };

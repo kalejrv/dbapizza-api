@@ -9,8 +9,8 @@ const statusService: IStatusService = new StatusService(statusRepository);
 
 const findStatus = async (_req: Request, res: Response<APIResponse>): Promise<void> => {
   try {
+    /* Validate if there aren't status registered. */
     const status = await statusService.findStatus();
-
     if (status.length === 0) {
       res.status(200).json({
         status: ServerStatusMessage.OK,
@@ -21,14 +21,15 @@ const findStatus = async (_req: Request, res: Response<APIResponse>): Promise<vo
     };
 
     res.status(200).json({
-      status: "OK",
+      status: ServerStatusMessage.OK,
       data: status,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -36,6 +37,7 @@ const findStatus = async (_req: Request, res: Response<APIResponse>): Promise<vo
 const findStatusById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
+  /* Validate that status id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -47,6 +49,7 @@ const findStatusById = async (req: Request, res: Response<APIResponse>): Promise
   };
 
   try {
+    /* Validate if status doesn't exist. */
     const statusExists = await statusService.findStatusById(id);
     if (!statusExists) {
       res.status(404).json({
@@ -62,10 +65,11 @@ const findStatusById = async (req: Request, res: Response<APIResponse>): Promise
       data: statusExists,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -74,8 +78,9 @@ const createStatus = async (req: Request, res: Response<APIResponse>): Promise<v
   const newStatus: Status = req.body;
   const { name, description } = newStatus;
   
+  /* Validate that all status values don't be empty values. */
   for (const key in newStatus) {
-    if (String(newStatus[key as keyof Status]).trim().length === 0) {
+    if (newStatus[key as keyof Status].trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Fields can not to be empty values.",
@@ -85,6 +90,7 @@ const createStatus = async (req: Request, res: Response<APIResponse>): Promise<v
     };
   };
 
+  /* Validate that all status values be required. */
   if ((Object.values(newStatus).length === 0) || !name || !description) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -94,7 +100,7 @@ const createStatus = async (req: Request, res: Response<APIResponse>): Promise<v
     return;
   };
 
-  /* Validate that Status name be a valid name. */
+  /* Validate that status name from request be a valid Status option. */
   const statusOptions: string = Object.values(StatusOption).reduce((prev: string, curr: StatusOption): string => {
     return prev += curr + ", ";
   }, "");
@@ -108,29 +114,31 @@ const createStatus = async (req: Request, res: Response<APIResponse>): Promise<v
   };
 
   try {
-    const statusExists = await statusService.findStatusByName(name);
-    
+    /* Validate that if status exists don't create it again. */
+    const statusExists = await statusService.findStatusByName(name);  
     if (statusExists) {
-      res.status(200).json({
-        status: ServerStatusMessage.OK,
+      res.status(409).json({
+        status: ServerStatusMessage.CONFLICT,
         msg: `Already exists '${statusExists.name}' as a status.`,
       });
 
       return;
     };
 
+    /* Create status. */
     const status = await statusService.createStatus(newStatus);
 
     res.status(201).json({
-      stauts: ServerStatusMessage.CREATED,
+      status: ServerStatusMessage.CREATED,
       msg: "Status created successfully.",
       data: status,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -139,6 +147,7 @@ const updateStatus = async (req: Request, res: Response<APIResponse>): Promise<v
   const { id } = req.params;
   const updates: Partial<Status> = req.body;
 
+  /* Validate that status id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -149,39 +158,40 @@ const updateStatus = async (req: Request, res: Response<APIResponse>): Promise<v
     return;
   };
   
+  /* Validate that updates don't be empty values. */
   for (const key in updates) {
-    if (String(updates[key as keyof Status]).trim().length === 0) {
+    if ((updates[key as keyof Status] as string).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Changes can not be empty values.",
+        msg: "Updates can not be empty values.",
       });
 
       return;
     };
   };
 
+  /* Validate that come at least one update value in request. */
   if (Object.values(updates).length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Changes are required.",
+      msg: "At least one update value is required.",
     });
     
     return;
   };
 
-  /* Validate that Status name be a valid name. */
-  if (updates.name) {
-    if (!Object.values(StatusOption).includes(updates.name as StatusOption)) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
-        msg: `Status name must to be: ${StatusOption.Pending}, ${StatusOption.InProgress} or ${StatusOption.Done}.`,
-      });
+  /* Validate that Status name be a valid Status option. */
+  if (updates.name && !Object.values(StatusOption).includes(updates.name as StatusOption)) {
+    res.status(400).json({
+      status: ServerStatusMessage.BAD_REQUEST,
+      msg: "Status name must to be a valid Status option.",
+    });
 
-      return;
-    };
+    return;
   };
 
   try {
+    /* Validate that if status doesn't exist isn't possible to update it. */
     const statusExists = await statusService.findStatusById(id);
     if (!statusExists) {
       res.status(404).json({
@@ -192,6 +202,7 @@ const updateStatus = async (req: Request, res: Response<APIResponse>): Promise<v
       return;
     };
 
+    /* Update status. */
     const statusUpdated = await statusService.updateStatus(id, updates);
 
     res.status(200).json({
@@ -200,10 +211,11 @@ const updateStatus = async (req: Request, res: Response<APIResponse>): Promise<v
       data: statusUpdated,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -211,6 +223,7 @@ const updateStatus = async (req: Request, res: Response<APIResponse>): Promise<v
 const deleteStatus = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
+  /* Validate that status id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -222,6 +235,7 @@ const deleteStatus = async (req: Request, res: Response<APIResponse>): Promise<v
   };
 
   try {
+    /* Validate that if status doesn't exist isn't possible to delete it. */
     const statusExists = await statusService.findStatusById(id);
     if (!statusExists) {
       res.status(404).json({
@@ -232,17 +246,19 @@ const deleteStatus = async (req: Request, res: Response<APIResponse>): Promise<v
       return;
     };
 
+    /* Delete status. */
     await statusService.deleteStatus(id);
 
     res.status(200).json({
-      status: ServerStatusMessage.OK,
+      status: ServerStatusMessage.DELETED,
       msg: "Status deleted successfully.",
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
