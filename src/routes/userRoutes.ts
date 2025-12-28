@@ -103,7 +103,91 @@ export const userRoutes = (): Router => {
 */
   router.get(`${basePath}`, verifyUserAuth, checkUserPermissions, findUsers);
 
-  /* TODO: add endpoint doc. */
+  /**
+* @openapi
+* /api/v1/users/stats_by_month:
+*   get:
+*     summary: Find users stats by month.
+*     description: This endpoint allow to show all users records stats by a specific month.
+*     tags:
+*       - Users
+*     security:
+*       - BearerAuth: []
+*     parameters:
+*       - name: year
+*         in: query
+*         schema:
+*           type: number
+*         description: A year number.
+*         required: true
+*       - name: month
+*         in: query
+*         schema:
+*           type: number
+*         description: A month number.
+*         required: true
+*     responses:
+*       200:
+*         description: OK
+*         content:
+*           application/json:
+*             schema:
+*               type: object
+*               properties:
+*                 status:
+*                   type: string
+*                   example: OK
+*                 data:
+*                   type: object
+*                   properties:
+*                     year:
+*                       type: number
+*                       example: 2025
+*                     month:
+*                       type: number
+*                       example: 10
+*                     items:
+*                       type: object
+*                       properties:
+*                         currentMonthItemsCount:
+*                           type: number
+*                           example: 15
+*                         lastMonthItemsCount:
+*                           type: number
+*                           example: 10
+*                         itemsGrowthRate:
+*                           type: number
+*                           example: 15.3
+*                         totalItemsCount:
+*                           type: number
+*                           example: 25
+*       400:
+*         description: BAD REQUEST
+*         content:
+*           application/json:
+*             schema:
+*               type: object
+*               properties:
+*                 status:
+*                   type: string
+*                   example: BAD_REQUEST
+*                 msg:
+*                   type: string
+*                   example: Some error message.
+*       500:
+*         description: FAILED
+*         content:
+*           application/json:
+*             schema:
+*               type: object
+*               properties:
+*                 status: 
+*                   type: string
+*                   example: FAILED
+*                 msg:
+*                   type: string
+*                   example: Some error message.
+*/
   router.get(`${basePath}/stats_by_month`, verifyUserAuth, checkUserPermissions, findUsersStatsByMonth);
   
   /**

@@ -1,8 +1,8 @@
-export interface ItemsGrowthRateProps { 
+export interface ItemsGrowthRateArgs { 
   currentMonthItemsCount: number;
   lastMonthItemsCount: number;
 };
 
-export interface ItemsGrowthRate extends ItemsGrowthRateProps {
+export interface ItemsGrowthRate extends ItemsGrowthRateArgs {
   itemsGrowthRate: number | null;
 };

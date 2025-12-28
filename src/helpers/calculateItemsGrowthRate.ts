@@ -1,6 +1,8 @@
-import { ItemsGrowthRate, ItemsGrowthRateProps } from "@types";
+import { ItemsGrowthRate, ItemsGrowthRateArgs } from "@types";
 
-export const calculateItemsGrowthRate = ({ currentMonthItemsCount, lastMonthItemsCount }: ItemsGrowthRateProps): ItemsGrowthRate => {
+export const calculateItemsGrowthRate = (itemsGrowthRateArgs: ItemsGrowthRateArgs): ItemsGrowthRate => {
+  const { currentMonthItemsCount, lastMonthItemsCount } = itemsGrowthRateArgs;
+
   let itemsGrowthRate: number | null = null;
   
   if (lastMonthItemsCount > 0) {

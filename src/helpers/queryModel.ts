@@ -7,7 +7,7 @@ const findUsers = async (limit: number, skip: number): Promise<QueryModel<User>>
     UserModel
       .find({})
       .select("-password -createdAt -updatedAt")
-      .populate("role", "-createdAt -updatedAt")
+      .populate("role", "-_id -createdAt -updatedAt")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
