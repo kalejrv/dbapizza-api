@@ -1,7 +1,7 @@
 import { PizzaRepository, SizeRepository, ToppingRepository } from "@repositories";
 import { PizzaService, SizeService, ToppingService } from "@services";
-import { IPizzaRepository, IPizzaService, ISizeRepository, ISizeService, IToppingRepository, IToppingService, OrderItem, Item, Pizza, Size, Topping } from "@types";
-import { pizzaWithPrice } from "./pizzaWithPrice";
+import { IPizzaRepository, IPizzaService, ISizeRepository, ISizeService, IToppingRepository, IToppingService, OrderItem, NewOrderItem, PizzaDoc, Topping, ToppingDoc, SizeDoc } from "@types";
+import { calculatePizzaPrice } from "./calculatePizzaPrice";
 
 const pizzaRepository: IPizzaRepository = new PizzaRepository;
 const pizzaService: IPizzaService = new PizzaService(pizzaRepository);
@@ -12,46 +12,54 @@ const toppingService: IToppingService = new ToppingService(toppingRepository);
 const sizeRepository: ISizeRepository = new SizeRepository;
 const sizeService: ISizeService = new SizeService(sizeRepository);
 
-export const formatOrderItems = async (orderItems: Item[]): Promise<OrderItem[]> => {
+export const formatOrderItems = async (items: NewOrderItem[]): Promise<OrderItem[]> => {
   try {
     const formattedOrderItems = await Promise.all(
-      orderItems.map(async (item: Item): Promise<OrderItem> => {
+      items.map(async (item: NewOrderItem): Promise<OrderItem> => {
         /* Find pizza and size. */
-        const pizzaExists = await pizzaService.findPizzaById(String(item.pizza)) as Pizza;
-        const sizeExists = await sizeService.findSizeByName(item.size) as Size;
-
-        /* Assign size selected by user to pizza and calculate its total price. */
-        pizzaExists.size = sizeExists;
-        const pizza = pizzaWithPrice(pizzaExists);
+        const [pizzaExists, sizeExists] = await Promise.all([
+          pizzaService.findPizzaById(item.pizza as string),
+          sizeService.findSizeById(item.selectedSize as string),
+        ]);
+        
+        /* Validate if pizza or size don't exists. */
+        if (!pizzaExists || !sizeExists) throw new Error(`Pizza or Size were not found.`);
+        
+        /* Calculate pizza total price. */
+        const size = sizeExists as SizeDoc;
+        const pizza = calculatePizzaPrice(pizzaExists as PizzaDoc, size);
 
         /* Find toppings and calculate its total price. */
-        let toppings: Topping[] = [];
+        let toppings: string[] = [];
+        let toppingsFinded: ToppingDoc[] = [];
         let toppingsTotalPrice: number = 0;
         if (item.toppings && (item.toppings.length > 0)) {
           const toppingsId = item.toppings.map(toppingId => toppingId);
-          toppings = await toppingService.findToppings({ _id: { $in: toppingsId } });
-          toppingsTotalPrice = toppings.reduce((prev: number, curr: Topping): number => prev += curr.price, 0);
+          toppingsFinded = await toppingService.findToppings({ _id: { $in: toppingsId } }) as ToppingDoc[];
+          toppingsTotalPrice = toppingsFinded.reduce((prev: number, curr: Topping): number => prev += curr.price, 0);
+          toppings = toppingsFinded.map(topping => topping._id as string);
         };
-  
+
         /* Set item quantity and calculate its total price. */
-        const quantity: number = item.quantity;
+        const quantity = item.quantity;
         let total: number = 0;
         (item.toppings && (item.toppings.length > 0))
           ? total = (pizza.price + toppingsTotalPrice) * quantity
           : total = pizza.price * quantity;
         
         return {
-          pizza,
-          toppingsDetail: {
+          pizza: pizza._id as string,
+          selectedSize: size._id as string,
+          extra: {
             toppings,
-            toppingsTotalPrice,
+            total: toppingsTotalPrice,
           },
           quantity,
           total,
         };
       }),
     );
-
+    
     return formattedOrderItems;
   } catch (error: any) {
     throw new Error(`Error: ${error.message}`);

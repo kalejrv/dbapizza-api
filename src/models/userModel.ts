@@ -1,6 +1,6 @@
 import mongoose, { Schema, Types } from "mongoose";
 import bcrypt from "bcrypt";
-import { User } from "@types";
+import { User, UserDoc } from "@types";
 
 /**
 * @openapi
@@ -71,8 +71,8 @@ const UserSchema: Schema = new Schema<User>({
 });
 
 UserSchema.pre<User>("save", async function(next): Promise<void> {
-  const user = this;
-
+  const user = this as UserDoc;
+  
   if (user.isNew || user.isModified("password")) {
     try {
       const SALT_ROUNDS: number = 10;

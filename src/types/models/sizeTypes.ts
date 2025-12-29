@@ -1,7 +1,6 @@
-import { Document } from "mongoose";
-import { Query, Repository } from "./repositoryTypes";
+import { Query, Repository } from "@types";
 
-export interface Size extends Document {
+export interface Size {
   name: string;
   price: number;
 };

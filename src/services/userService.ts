@@ -15,6 +15,11 @@ export class UserService implements IUserService {
     return this.userRepository.find(query);
   };
 
+  async findUsersCount(query?: Query): Promise<number> {
+    const count = this.userRepository.findCount?.(query);
+    return count ?? 0;
+  };
+
   async findUserById(id: string): Promise<User | null> {
     return this.userRepository.findById(id);
   };

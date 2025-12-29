@@ -1,5 +1,5 @@
-import mongoose, { Schema, Types } from "mongoose";
-import { Order, OrderItem, OrderUser, ToppingsDetail } from "@types";
+import mongoose, { Schema } from "mongoose";
+import { DeliveryType, Order, OrderDelivery, OrderItem, OrderStatusHistory, OrderUser, StatusOption } from "@types";
 
 const OrderUserSchema: Schema = new Schema<OrderUser>({
   firstName: {
@@ -24,26 +24,27 @@ const OrderUserSchema: Schema = new Schema<OrderUser>({
   },
 });
 
-const ToppingsDetailSchema: Schema = new Schema<ToppingsDetail>({
-  toppings: [{
-    type: Types.ObjectId,
-    ref: "Toppings",
-  }],
-  toppingsTotalPrice: {
-    type: Number,
-    required: true,
-  },
-});
-
 const OrderItemSchema: Schema = new Schema<OrderItem>({
   pizza: {
-    type: Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "Pizzas",
     required: true,
   },
-  toppingsDetail: {
-    type: ToppingsDetailSchema,
-    required: false,
+  selectedSize: {
+    type: Schema.Types.ObjectId,
+    ref: "Sizes",
+    required: true,
+  },
+  extra: {
+    toppings: [{
+      type: Schema.Types.ObjectId,
+      ref: "Toppings",
+      required: false,
+    }],
+    total: {
+      type: Number,
+      required: false,
+    },
   },
   quantity: {
     type: Number,
@@ -51,6 +52,30 @@ const OrderItemSchema: Schema = new Schema<OrderItem>({
   },
   total: {
     type: Number,
+    required: true,
+  },
+});
+
+const OrderDeliverySchema: Schema = new Schema<OrderDelivery>({
+  type: {
+    type: String,
+    enum: Object.values(DeliveryType),
+    required: true,
+  },
+  estimatedTime: {
+    type: Number,
+    required: true,
+  },
+});
+
+const OrderStatusHistorySchema: Schema = new Schema<OrderStatusHistory>({
+  name: {
+    type: String,
+    enum: Object.values(StatusOption),
+    required: true,
+  },
+  timestamp: {
+    type: Date,
     required: true,
   },
 });
@@ -86,10 +111,14 @@ const OrderItemSchema: Schema = new Schema<OrderItem>({
 *             type: object
 *             properties:
 *               pizza:
-*                 type: string
+*                 type: Pizza | string
 *                 example: 679c57cd105154cb855d7fd3
-*                 Description: "A pizza id."
-*               toppingsDetail:
+*                 description: "A Pizza document or id."
+*               selectedSize:
+*                 type: Size | string
+*                 example: 679c57cd105154cb855d7fd3
+*                 description: "A Size document or id."
+*               extra:
 *                 type: object
 *                 properties:
 *                   toppings:
@@ -97,8 +126,8 @@ const OrderItemSchema: Schema = new Schema<OrderItem>({
 *                     items:
 *                       type: string
 *                       example: 6798077e96d97dd292904d2d
-*                       Description: "A topping id."
-*                   toppingsTotalPrice:
+*                       description: "A topping id."
+*                   total:
 *                     type: number
 *                     example: 220
 *               quantity:
@@ -107,13 +136,47 @@ const OrderItemSchema: Schema = new Schema<OrderItem>({
 *               total:
 *                 type: number
 *                 example: 850
+*         delivery:
+*           type: object
+*           properties:
+*             type:
+*               type: string
+*               example: "Delivery"
+*               description: "A delivery option."
+*             estimatedTime:
+*               type: number
+*               example: 20
+*               description: "Time in minutes to complete an order."             
 *         status:
-*           $ref: "#/components/schemas/Status"
+*           type: Status | string
+*           example: "6798077e96d97dd292904d2d" 
+*           description: "A Status document or id."
+*         statusHistory:
+*           type: array
+*           items:
+*             type: object
+*             properties:
+*               name:
+*                 type: string
+*                 example: "Pending"
+*                 description: "A Status name."
+*               timestamp:
+*                 type: Date
+*                 exmaple: 2025-10-20T18:16:12.000+00:00
+*                 description: "Date which the order was updated."
+*         notes:
+*           type: string
+*           example: "Call me when the order is done, please."
+*           description: "Customer notes."
 *         total:
 *           type: number
 *           example: 1250
 */
 const OrderSchema: Schema = new Schema<Order>({
+  code: {
+    type: String,
+    required: true,
+  },
   user: {
     type: OrderUserSchema,
     required: true,
@@ -122,10 +185,22 @@ const OrderSchema: Schema = new Schema<Order>({
     type: [OrderItemSchema],
     required: true,
   },
+  delivery: {
+    type: OrderDeliverySchema,
+    required: true,
+  },
   status: {
-    type: Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "Status",
     required: true,
+  },
+  statusHistory: {
+    type: [OrderStatusHistorySchema],
+    required: true,
+  },
+  notes: {
+    type: String,
+    required: false,
   },
   total: {
     type: Number,
