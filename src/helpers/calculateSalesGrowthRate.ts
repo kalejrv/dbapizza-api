@@ -1,6 +1,8 @@
-import { SalesGrowthRate, SalesGrowthRateProps } from "@types";
+import { SalesGrowthRate, SalesGrowthRateArgs } from "@types";
 
-export const calculateSalesGrowthRate = ({ currentMonthItems, lastMonthItems }: SalesGrowthRateProps): SalesGrowthRate => {
+export const calculateSalesGrowthRate = (salesGrowthRateArgs: SalesGrowthRateArgs): SalesGrowthRate => {
+  const { currentMonthItems, lastMonthItems } = salesGrowthRateArgs;
+  
   const currentMonthSalesAmount = currentMonthItems.reduce((prev, curr): number => prev += curr.total, 0);
   const lastMonthSalesAmount = lastMonthItems.reduce((prev, curr): number => prev += curr.total, 0);
   let salesGrowthRate: number | null = null;

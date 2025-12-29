@@ -1,6 +1,8 @@
-import { OrderCode, OrderCodeProps } from "@types";
+import { OrderCode, OrderCodeArgs } from "@types";
 
-export const createOrderCode = ({ firstName, lastName }: OrderCodeProps): OrderCode => {
+export const createOrderCode = (orderCodeArgs: OrderCodeArgs): OrderCode => {
+  const { firstName, lastName } = orderCodeArgs;
+
   const prefix: string = "ORD";
   const userName: string = `${firstName.slice(0, 1).toUpperCase()}${lastName.slice(0, 1).toUpperCase()}`;
   const randomNumber: number = Math.floor((Math.random()) * 100000);
