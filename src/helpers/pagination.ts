@@ -10,7 +10,7 @@ export const pagination = async (paginationsArgs: PaginationArgs): Promise<Pagin
     
     switch (model) {
       case PaginationModel.Users:
-        const {totalModelItems: totalUsers, modelItems: users } = await queryModel.findUsers(limit, skip);
+        const { totalModelItems: totalUsers, modelItems: users } = await queryModel.findUsers(limit, skip);
         totalItems = totalUsers;
         items = users;
         break;

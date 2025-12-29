@@ -13,8 +13,8 @@ export enum Scope {
 };
 
 export interface Permission {
-  method: string;
-  scope: string;
+  method: Method;
+  scope: Scope;
   actions: string[];
 };
 

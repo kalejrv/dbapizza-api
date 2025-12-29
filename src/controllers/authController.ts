@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { RoleRepository, UserRepository } from "@repositories";
 import { RoleService, UserService } from "@services";
-import { APIResponse, IRoleRepository, IRoleService, IUserRepository, IUserService, ServerStatusMessage, User } from "@types";
+import { APIResponse, IRoleRepository, IRoleService, IUserRepository, IUserService, NewUser, Role, RoleDoc, ServerStatusMessage, TokenPayload, User, UserDoc } from "@types";
 import { createToken } from "@utils";
 
 const userRepository: IUserRepository = new UserRepository();
@@ -12,84 +12,84 @@ const roleService: IRoleService = new RoleService(roleRepository);
 
 const signupUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   let newUser: User = req.body;
-  const { firstName, lastName, address, phone, email, password } = newUser;
   
+  /* Validate that values from request don't be empty values. */
   for (const key in newUser) {
-    if (newUser[key as keyof User].length === 0) {
+    if (newUser[key as keyof NewUser].length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Field can not be an empty value.",
+        msg: "All fields are required.",
       });
 
       return;
     };
-  };
-
-  if (!firstName || !lastName || !address || !phone || !email || !password) {
-    res.status(400).json({
-      status: ServerStatusMessage.BAD_REQUEST,
-      msg: "All fields are required.",
-    });
-
-    return;
   };
 
   try {
-    const userExists = await userService.findUserByEmail(email);
+    /* Validate that if user already exists don't register them.  */
+    const userExists = await userService.findUserByEmail(newUser.email);
     if (userExists) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
-        msg: `Already exists an account with E-mail: ${email}`,
+      res.status(409).json({
+        status: ServerStatusMessage.CONFLICT,
+        msg: `Already exists an account with E-mail: ${userExists.email}`,
       });
 
       return;
     };
 
-    const clientRole = await roleService.findRoleByName("client");
-    if (clientRole) {
-      newUser.role = clientRole.id;
-    };
+    /* Assign 'client' role to new user. */
+    const clientRole = await roleService.findRoleByName("client") as RoleDoc;
+    const userRole = clientRole._id.toString();
 
-    const user = await userService.createUser(newUser);
-
+    /* Create new user record. */
+    const user = await userService.createUser({ ...newUser, role: userRole }) as UserDoc;
+    const { firstName, lastName, address, phone, email, role } = user;
+    
+    /* Create user session token. */
+    const payload: TokenPayload = { userId: user._id.toString() };
+    const token = createToken(payload);
+    
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
-      data: user,
+      data: {
+        msg: `Welcome, ${firstName} ${lastName}! You has been registered successfully.`,
+        user: {
+          firstName,
+          lastName,
+          address,
+          phone,
+          email,
+          role: (role as Role).name,
+        },
+        token,
+      },
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
 
-const loginUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
+const signinUser = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { body, body: { email, password } } = req;
   
-  for (const key in body) {
-    if ((body[key] as string).trim().length === 0 ) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
-        msg: "E-mail and Password can not to be empty values.",
-      });
-
-      return;
-    };
-  };
-
+  /* Validate that email and password don't be empty values. */
   if ((Object.values(body).length === 0) || !email || !password) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "E-mail and password are required.",
+      msg: "E-mail and Password are required.",
     });
 
     return;
   };
   
   try {
-    const userExists = await userService.findUserByEmail(email);
+    /* Validate that user exists. */
+    const userExists = await userService.findUserByEmail(email) as UserDoc;
     if (!userExists) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
@@ -99,6 +99,7 @@ const loginUser = async (req: Request, res: Response<APIResponse>): Promise<void
       return;
     };
 
+    /* Validate that password from request matches user password. */
     const passwordMatch = await userExists.comparePassword(password);
     if (!passwordMatch) {
       res.status(400).json({
@@ -108,24 +109,38 @@ const loginUser = async (req: Request, res: Response<APIResponse>): Promise<void
 
       return;
     };
-
-    const token = createToken({ id: userExists.id });
     
+    /* Create user session token. */
+    const { firstName, lastName, address, phone, role } = userExists;
+    const payload: TokenPayload = { userId: userExists._id.toString() };
+    const token = createToken(payload);
+
     res.status(200).json({
       status: ServerStatusMessage.OK,
-      msg: `${userExists.firstName} logged successfully.`,
-      token,
+      data: {
+        msg: `Welcome, ${firstName} ${lastName}.`,
+        user: {
+          firstName,
+          lastName,
+          address,
+          phone,
+          email,
+          role: (role as Role).name,
+        },
+        token,
+      },
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
 
 export {
   signupUser,
-  loginUser,
+  signinUser,
 };

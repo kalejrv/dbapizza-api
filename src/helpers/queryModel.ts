@@ -7,7 +7,7 @@ const findUsers = async (limit: number, skip: number): Promise<QueryModel<User>>
     UserModel
       .find({})
       .select("-password -createdAt -updatedAt")
-      .populate("role", "-createdAt -updatedAt")
+      .populate("role", "-_id -createdAt -updatedAt")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })
@@ -44,14 +44,14 @@ const findPizzas = async (limit: number, skip: number): Promise<QueryModel<Pizza
     PizzaModel
       .find({})
       .select("-createdAt -updatedAt")
-      .populate("flavor", "-createdAt -updatedAt")
-      .populate("size", "-createdAt -updatedAt")
+      .populate("flavor", "-_id -createdAt -updatedAt")
+      .populate("size", "-_id -createdAt -updatedAt")
       .skip(skip)
       .limit(limit)
       .sort({ size: -1 })
       .exec(),
   ]);
-
+  
   return {
     totalModelItems,
     modelItems,
@@ -63,10 +63,18 @@ const findOrders = async (limit: number, skip: number): Promise<QueryModel<Order
     OrderModel.countDocuments(),
     OrderModel
       .find({})
-      .select("-createdAt -updatedAt")
-      .populate("status", "-_id -createdAt -updatedAt")
-      .populate("items.pizza", "-_id -createdAt -updatedAt")
-      .populate("items.toppingsDetail.toppings", "-_id -createdAt -updatedAt")
+      .select("-updatedAt")
+      .populate({
+        path: "items.pizza",
+        select: "-createdAt -updatedAt",
+        populate: [
+          { path: "flavor", select: "-createdAt -updatedAt" },
+          { path: "size", select: "-createdAt -updatedAt" },
+        ],
+      })
+      .populate("items.selectedSize", "-createdAt -updatedAt")
+      .populate("items.extra.toppings", "-createdAt -updatedAt")
+      .populate("status", "-createdAt -updatedAt")
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 })

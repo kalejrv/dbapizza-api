@@ -41,6 +41,7 @@
     "@controllers": "./dist/controllers",
     "@db": "./dist/db",
     "@docs": "./dist/docs",
+    "@errors": "./dist/errors",
     "@helpers": "./dist/helpers",
     "@middlewares": "./dist/middlewares",
     "@models": "./dist/models",

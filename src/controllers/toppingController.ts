@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { pagination } from "@helpers";
 import { ToppingRepository } from "@repositories";
 import { ToppingService } from "@services";
-import { APIResponse, IToppingRepository, IToppingService, PaginationModel, ServerStatusMessage, Topping } from "@types";
+import { APIResponse, IToppingRepository, IToppingService, PaginationModel, ServerStatusMessage, Topping, ToppingDoc } from "@types";
 import { isAValidId } from "@utils";
 
 const toppingRepository: IToppingRepository = new ToppingRepository();
@@ -14,24 +14,30 @@ const findToppings = async (req: Request, res: Response<APIResponse>): Promise<v
   const limit: number = Number(query.limit);
 
   try {
+    /* Validate if query values don't come in request. */
     if (Object.values(query).length === 0) {
-      const toppings = await toppingService.findToppings();
-      if (toppings.length === 0) {
-        res.status(404).json({
-          status: ServerStatusMessage.NOT_FOUND,
-          msg: "No toppings found.",
+      /* Validate if there aren't any topping registed. */
+      const items = await toppingService.findToppings();
+      if (items.length === 0) {
+        res.status(200).json({
+          status: ServerStatusMessage.OK,
+          msg: "No toppings yet.",
+          data: {
+            items,
+            totalItems: items.length,
+          },
         });
-  
+
         return;
       };
 
       res.status(200).json({
         status: ServerStatusMessage.OK,
         data: {
-          toppings,
-          totalToppings: toppings.length,
-          toppingsByPage: toppings.length,
-          currentToppingsQuantity: toppings.length,
+          items,
+          totalItems: items.length,
+          itemsByPage: items.length,
+          currentItemsQuantity: items.length,
           currentPage: 1,
           totalPages: 1,
         },
@@ -53,20 +59,17 @@ const findToppings = async (req: Request, res: Response<APIResponse>): Promise<v
     /* Get paginated toppings. */
     const skip: number = (page - 1) * limit;
     const toppingsPaginated = await pagination({ model: PaginationModel.Toppings, page, limit, skip });
-    const {
-      items: toppings,
-      totalItems: totalToppings,
-      itemsByPage: toppingsByPage,
-      currentItemsQuantity: currentToppingsQuantity,
-      currentPage,
-      totalPages,
-    } = toppingsPaginated;
+    const { items, totalItems, itemsByPage, currentItemsQuantity, currentPage, totalPages } = toppingsPaginated;
 
-    /* Validate if there isn't toppings. */
-    if (toppings.length === 0) {
-      res.status(404).json({
-        status: ServerStatusMessage.NOT_FOUND,
-        msg: "No toppings found.",
+    /* Validate if there aren't toppings registered. */
+    if (items.length === 0) {
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
+        msg: "No toppings yet.",
+        data: {
+          items,
+          totalItems: items.length,
+        },
       });
 
       return;
@@ -75,19 +78,20 @@ const findToppings = async (req: Request, res: Response<APIResponse>): Promise<v
     res.status(200).json({
       status: ServerStatusMessage.OK,
       data: {
-        toppings,
-        totalToppings,
-        toppingsByPage,
-        currentToppingsQuantity,
+        items,
+        totalItems,
+        itemsByPage,
+        currentItemsQuantity,
         currentPage,
         totalPages,
       },
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -95,6 +99,7 @@ const findToppings = async (req: Request, res: Response<APIResponse>): Promise<v
 const findToppingById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
   
+  /* Validate that topping id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -106,6 +111,7 @@ const findToppingById = async (req: Request, res: Response<APIResponse>): Promis
   };
   
   try {
+    /* Validate if topping doesn't exists. */
     const topping = await toppingService.findToppingById(id);
     if (!topping) {
       res.status(404).json({
@@ -121,10 +127,11 @@ const findToppingById = async (req: Request, res: Response<APIResponse>): Promis
       data: topping,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -133,6 +140,7 @@ const createTopping = async (req: Request, res: Response<APIResponse>): Promise<
   const newTopping: Topping = req.body;
   const { name, price } = newTopping;
 
+  /* Validate that values from request don't be empty values. */
   for (const key in newTopping) {
     if (String(newTopping[key as keyof Topping]).trim().length === 0) {
       res.status(400).json({
@@ -144,6 +152,7 @@ const createTopping = async (req: Request, res: Response<APIResponse>): Promise<
     };
   };
   
+  /* Validate that come all required values to create a new topping. */
   if ((Object.values(newTopping).length === 0) || !name || !price) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -154,16 +163,18 @@ const createTopping = async (req: Request, res: Response<APIResponse>): Promise<
   };
 
   try {
+    /* Validate that if already exists a topping with same name don't save it. */
     const toppingExists = await toppingService.findToppingByName(name);
     if (toppingExists) {
-      res.status(400).json({
-        status: ServerStatusMessage.BAD_REQUEST,
+      res.status(409).json({
+        status: ServerStatusMessage.CONFLICT,
         msg: `Already exists a topping with name: ${toppingExists.name}.`, 
       });
 
       return;
     };
-
+    
+    /* Create topping. */
     const topping = await toppingService.createTopping({
       ...newTopping,
       price: Number(price),
@@ -175,10 +186,11 @@ const createTopping = async (req: Request, res: Response<APIResponse>): Promise<
       data: topping,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -187,6 +199,7 @@ const updateTopping = async (req: Request, res: Response<APIResponse>): Promise<
   const { params: { id }, body } = req;
   const updates: Partial<Topping> = body;
 
+  /* Validate that topping id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -197,28 +210,31 @@ const updateTopping = async (req: Request, res: Response<APIResponse>): Promise<
     return;
   };
 
+  /* Validate that update values don't be empty values. */
   for (const key in updates) {
     if (String(updates[key as keyof Topping]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Changes can not be empty values.",
+        msg: "Udpates can not be empty values.",
       });
 
       return;
     };
   };
   
+  /* Validate that come at least one update in request. */
   if (Object.values(updates).length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Changes are required.",
+      msg: "At least one update is required.",
     });
-  
+
     return;
   };
 
   try {
-    const toppingExists = await toppingService.findToppingById(id);
+    /* Validate that if topping doesn't exists isn't possible to update it. */
+    const toppingExists = await toppingService.findToppingById(id) as ToppingDoc;
     if(!toppingExists) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
@@ -228,18 +244,33 @@ const updateTopping = async (req: Request, res: Response<APIResponse>): Promise<
       return;
     };
     
+    /* Validate that if already exists a topping with same name don't update it. */
+    if (updates.name) {
+      const toppingWithSameName = await toppingService.findToppingByName(updates.name) as ToppingDoc;
+      if (toppingWithSameName && (toppingWithSameName.id !== toppingExists.id)) {
+        res.status(409).json({
+          status: ServerStatusMessage.CONFLICT,
+          msg: `Already exists a topping with name: ${updates.name}.`,
+        });
+
+        return;
+      };
+    };
+    
+    /* Update topping. */
     const toppingUpdated = await toppingService.updateTopping(id, updates);
 
-    res.status(201).json({
-      status: ServerStatusMessage.CREATED,
+    res.status(200).json({
+      status: ServerStatusMessage.UPDATED,
       msg: "Topping updated successfully.",
       data: toppingUpdated,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -247,6 +278,7 @@ const updateTopping = async (req: Request, res: Response<APIResponse>): Promise<
 const deleteTopping = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
+  /* Validate that topping id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -258,6 +290,7 @@ const deleteTopping = async (req: Request, res: Response<APIResponse>): Promise<
   };
 
   try {
+    /* Validate that if topping doesn't exists isn't possible to delete it. */
     const toppingExists = await toppingService.findToppingById(id);
     if(!toppingExists) {
       res.status(404).json({
@@ -268,17 +301,19 @@ const deleteTopping = async (req: Request, res: Response<APIResponse>): Promise<
       return;
     };
 
+    /* Delete topping. */
     await toppingService.deleteTopping(id);
 
     res.status(200).json({
-      status: ServerStatusMessage.OK,
+      status: ServerStatusMessage.DELETED,
       msg: "Topping deleted successfully.",
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };

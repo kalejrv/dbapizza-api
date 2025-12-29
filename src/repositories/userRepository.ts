@@ -4,7 +4,9 @@ import { IUserRepository, Query, User } from "@types";
 export class UserRepository implements IUserRepository {
   async create(data: User): Promise<User> {
     const newUser = new UserModel(data);
-    return await newUser.save();
+    const savedUser = await newUser.save();
+
+    return await savedUser.populate("role", "-createdAt -updatedAt");
   };
 
   async find(query?: Query): Promise<User[]> {
@@ -15,11 +17,15 @@ export class UserRepository implements IUserRepository {
       .exec();
   };
 
+  async findCount(query?: Query): Promise<number> {
+    return await UserModel.countDocuments(query);
+  };
+
   async findById(id: string): Promise<User | null> {
     return await UserModel
       .findById(id)
       .select("-password -createdAt -updatedAt")
-      .populate("role", "-createdAt -updatedAt")
+      .populate("role", "-_id -createdAt -updatedAt")
       .exec();
   };
 

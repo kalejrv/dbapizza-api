@@ -1,12 +1,10 @@
-import { Query, Repository } from "./repositoryTypes";
-import { Flavor } from "./flavorTypes";
-import { Size } from "./sizeTypes";
+import { Flavor, Query, Repository, Size } from "@types";
 
 export interface Pizza {
-  flavor: Flavor;
-  size: Size;
+  flavor: Flavor | string;
+  size: Size | string;
   image: string;
-  price?: number;
+  price: number;
 };
 
 export interface IPizzaRepository extends Repository<Pizza> { };

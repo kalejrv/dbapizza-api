@@ -1,8 +1,8 @@
-import { Query, Repository } from "./repositoryTypes";
+import { Query, Repository } from "@types";
 
 export interface Topping {
-  name: string,
-  price: number,
+  name: string;
+  price: number;
 };
 
 export interface IToppingRepository extends Repository<Topping> { };

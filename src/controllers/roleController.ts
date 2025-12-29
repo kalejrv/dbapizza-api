@@ -7,13 +7,13 @@ import { isAValidId } from "@utils";
 const roleRepository: IRoleRepository = new RoleRepository();
 const roleService: IRoleService = new RoleService(roleRepository);
 
-const findRoles = async (req: Request, res: Response<APIResponse>): Promise<void> => {
+const findRoles = async (_req: Request, res: Response<APIResponse>): Promise<void> => {
   try {
+    /* Validate that exists roles. */
     const roles = await roleService.findRoles();
-
     if (roles.length === 0) {
-      res.status(404).json({
-        status: ServerStatusMessage.NOT_FOUND,
+      res.status(200).json({
+        status: ServerStatusMessage.OK,
         msg: "No roles found.",
       });
 
@@ -21,14 +21,15 @@ const findRoles = async (req: Request, res: Response<APIResponse>): Promise<void
     };
 
     res.status(200).json({
-      status: "OK",
+      status: ServerStatusMessage.OK,
       data: roles,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -36,6 +37,7 @@ const findRoles = async (req: Request, res: Response<APIResponse>): Promise<void
 const findRoleById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
+  /* Validate that role id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -47,6 +49,7 @@ const findRoleById = async (req: Request, res: Response<APIResponse>): Promise<v
   };
 
   try {
+    /* Validate that role exists. */
     const roleExists = await roleService.findRoleById(id);
     if (!roleExists) {
       res.status(404).json({
@@ -59,13 +62,14 @@ const findRoleById = async (req: Request, res: Response<APIResponse>): Promise<v
     
     res.status(200).json({
       status: ServerStatusMessage.OK,
-      role: roleExists,
+      data: roleExists,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -74,6 +78,7 @@ const createRole = async (req: Request, res: Response<APIResponse>): Promise<voi
   const newRole: Role = req.body;
   const { name, permissions } = newRole;
 
+  /* Validate role name. */
   if (!name || name.trim().length === 0)  {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -83,6 +88,7 @@ const createRole = async (req: Request, res: Response<APIResponse>): Promise<voi
     return;
   };
 
+  /* Validate role permissions. */
   if (!permissions || permissions.length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -93,37 +99,42 @@ const createRole = async (req: Request, res: Response<APIResponse>): Promise<voi
   };
 
   try {
+    /* Validate that if role exists don't save it. */
     const roleExists = await roleService.findRoleByName(name);
     if (roleExists) {
-      res.status(200).json({
-        status: ServerStatusMessage.OK,
+      res.status(409).json({
+        status: ServerStatusMessage.CONFLICT,
         msg: `Already exists '${roleExists.name}' as a role.`,
       });
 
       return;
     };
 
+    /* Create role and save it. */
     const role = await roleService.createRole(newRole);
 
     res.status(201).json({
-      stauts: ServerStatusMessage.CREATED,
+      status: ServerStatusMessage.CREATED,
       msg: "Role created successfully.",
-      role,
+      data: role,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
 
 const updateRole = async (req: Request, res: Response<APIResponse>): Promise<void> => {
-  const updates: Partial<Role> = req.body;
+  const { body, params } = req;
+  const { id } = params;
+  const updates: Partial<Role> = body;
   const { name, permissions } = updates;
-  const { id } = req.params;
 
+  /* Validate that role id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -134,16 +145,18 @@ const updateRole = async (req: Request, res: Response<APIResponse>): Promise<voi
     return;
   };
 
+  /* Validate that exists at least one role property update. */
   if (Object.values(updates).length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Changes are required.",
+      msg: "Role updates are required.",
     });
 
     return;
   };
 
-  if (!name || name.trim().length === 0) {
+  /* Validate role name. */
+  if (name?.trim().length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
       msg: "Role name is required.",
@@ -152,7 +165,8 @@ const updateRole = async (req: Request, res: Response<APIResponse>): Promise<voi
     return;
   };
   
-  if (!permissions || permissions.length === 0) {
+  /* Validate role permissions. */
+  if (permissions && permissions.length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
       msg: "Permissions are required.",
@@ -162,6 +176,7 @@ const updateRole = async (req: Request, res: Response<APIResponse>): Promise<voi
   };
 
   try {
+    /* Validate that if role don't exists isn't possible to update it. */
     const roleExists = await roleService.findRoleById(id);
     if (!roleExists) {
       res.status(404).json({
@@ -172,18 +187,20 @@ const updateRole = async (req: Request, res: Response<APIResponse>): Promise<voi
       return;
     };
 
+    /* Add new updates to role and save them. */
     const roleUpdated = await roleService.updateRole(id, updates);
     
     res.status(201).json({
-      status: ServerStatusMessage.CREATED,
+      status: ServerStatusMessage.UPDATED,
       msg: "Role updated successfully.",
-      roleUpdated,
+      data: roleUpdated,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
@@ -191,6 +208,7 @@ const updateRole = async (req: Request, res: Response<APIResponse>): Promise<voi
 const deleteRole = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
+  /* Validate that role id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -202,6 +220,7 @@ const deleteRole = async (req: Request, res: Response<APIResponse>): Promise<voi
   };
 
   try {
+    /* Validate that if role don't exists isn't possible to delete it. */
     const roleExists = await roleService.findRoleById(id);
     if (!roleExists) {
       res.status(404).json({
@@ -212,6 +231,7 @@ const deleteRole = async (req: Request, res: Response<APIResponse>): Promise<voi
       return;
     };
 
+    /* Delete role. */
     await roleService.deleteRole(id);
 
     res.status(200).json({
@@ -219,10 +239,11 @@ const deleteRole = async (req: Request, res: Response<APIResponse>): Promise<voi
       msg: "Role deleted successfully.",
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
-      error,
+      msg: error.message,
     });
   };
 };
