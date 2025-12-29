@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { addNewStatusHistory, calculateItemsGrowthRate, calculateSalesGrowthRate, calculateTotalOrder, createOrderCode, formatOrderItems, pagination } from "@helpers";
 import { OrderRepository, StatusRepository } from "@repositories";
 import { OrderService, StatusService } from "@services";
-import { APIResponse, DeliveryType, IOrderRepository, IOrderService, IStatusRepository, IStatusService, NewOrder, NewOrderItem, Order, OrderDelivery, OrderItem, OrderStatusHistory, OrderUpdates, OrderUser, PaginationModel, ServerStatusMessage, Status, StatusDoc, StatusOption } from "@types";
+import { APIResponse, DeliveryType, IOrderRepository, IOrderService, IStatusRepository, IStatusService, NewOrder, NewOrderItem, Order, OrderCode, OrderDelivery, OrderItem, OrderStatusHistory, OrderUpdates, OrderUser, PaginationModel, ServerStatusMessage, Status, StatusDoc, StatusOption } from "@types";
 import { isAValidId } from "@utils";
 
 const orderRepository: IOrderRepository = new OrderRepository;
@@ -17,8 +17,9 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
   const limit: number = Number(query.limit);
   
   try {
-    /* Validate if come query params. */
+    /* Validate if query params come in request. */
     if (Object.values(query).length === 0) {
+      /* Validate if there aren't any order registered. */
       const items = await orderService.findOrders();
       if (items.length === 0) {
         res.status(200).json({
@@ -32,7 +33,7 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
 
         return;
       };
-  
+
       res.status(200).json({
         status: ServerStatusMessage.OK,
         data: {
@@ -63,7 +64,7 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
     const paginatedOrders = await pagination({ model: PaginationModel.Orders, page, limit, skip });
     const { items, totalItems, itemsByPage, currentItemsQuantity, currentPage, totalPages } = paginatedOrders;
 
-    /* Validate if there isn't orders. */
+    /* Validate if there aren't any order registered. */
     if (items.length === 0) {
       res.status(200).json({
         status: ServerStatusMessage.OK,
@@ -88,7 +89,8 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
       },
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
       msg: error.message,
@@ -172,7 +174,8 @@ const findOrdersStatsByMonth = async (req: Request, res: Response<APIResponse>):
       },
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
       msg: error.message,
@@ -183,7 +186,7 @@ const findOrdersStatsByMonth = async (req: Request, res: Response<APIResponse>):
 const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
-  /* Validate order id. */
+  /* Validate that order id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -195,7 +198,7 @@ const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<
   };
 
   try {
-    /* Validate that order exists. */
+    /* Validate if order doesn't exist. */
     const orderExists = await orderService.findOrderById(id);
     if (!orderExists) {
       res.status(404).json({
@@ -211,7 +214,8 @@ const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<
       data: orderExists,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
       msg: error.message,
@@ -229,13 +233,13 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
   for (const key in newOrder) {
     if (key === 'notes') continue;
 
-    const k = key as keyof NewOrder;
+    const value = newOrder[key as keyof NewOrder];
 
-    if ((typeof newOrder[k] === 'string') || Array.isArray(newOrder[k])) {
-      if (newOrder[k].length === 0) {
+    if ((typeof value === 'string') || Array.isArray(value)) {
+      if (value.length === 0) {
         res.status(400).json({
           status: ServerStatusMessage.BAD_REQUEST,
-          msg: "Items pizza and Delivery option are required.",
+          msg: "The pizza items and delivery option are required.",
         });
 
         return;
@@ -243,7 +247,7 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     };
   };
   
-  /* Validate that items don't come with properties as falsy values. */
+  /* Validate that pizza items don't come with properties as falsy values. */
   for (const item of items) {
     for (const key in item) {
       if (key === "toppings") continue;
@@ -270,7 +274,7 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
   };
   
   try {
-    /* Search for 'Pending' status wich is initial status for orders. */
+    /* Search for 'Pending' status wich is default status for orders. */
     const statusExists = await statusService.findStatusByName("Pending") as StatusDoc;
     if (!statusExists) {
       res.status(404).json({
@@ -280,12 +284,12 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
       return;
     };
 
-    /* Build order properties. */
-    const code: string = createOrderCode({ firstName, lastName });
+    /* Build order. */
+    const code: OrderCode = createOrderCode({ firstName, lastName });
     const user: OrderUser = { firstName, lastName, address, phone, email };
     const orderItems: OrderItem[] = await formatOrderItems(items);
     const delivery: OrderDelivery = { type: deliveryType, estimatedTime: 20 };
-    const status: string = statusExists._id as string;
+    const status: string = statusExists._id.toString();
     const statusHistory: OrderStatusHistory[] = [addNewStatusHistory(statusExists)];
     const total: number = calculateTotalOrder(orderItems);
 
@@ -307,7 +311,8 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
       data: orderCreated,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
       msg: error.message,
@@ -320,7 +325,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
   const { status, deliveryType, notes }: OrderUpdates = body;
   const { id } = params;
 
-  /* Validate order id. */
+  /* Validate that order id be a valid id. */
   const validOrderId = isAValidId(id);
   if (!validOrderId) {
     res.status(400).json({
@@ -331,11 +336,11 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     return;
   };
   
-  /* Validate if don't come changes. */
+  /* Validate if don't come updates in request. */
   if (Object.values(body).length === 0) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "At least 1 change is required.",
+      msg: "At least one update is required.",
     });
 
     return;
@@ -373,7 +378,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
   };
 
   try {
-    /* Validate if order don't exists. */
+    /* Validate if order doesn't exist. */
     const orderExists = await orderService.findOrderById(id);
     if (!orderExists) {
       res.status(404).json({
@@ -384,9 +389,9 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
       return;
     };
     
-    /* Validate if status don't exists. */
+    /* Validate if status doesn't exist. */
     const currentOrderStatus = (orderExists.status as StatusDoc);
-    const newOrderStatus = await statusService.findStatusById( status as string ?? currentOrderStatus._id as string);
+    const newOrderStatus = await statusService.findStatusById( status as string ?? currentOrderStatus._id.toString());
     if (!newOrderStatus) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
@@ -425,7 +430,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
 
       return;
     };
-
+    
     /* Avoid that status can be setted different of "Delivered" if current order status is "On the way". */
     if (status && (newOrderStatus.name !== StatusOption.Delivered) && (currentOrderStatus.name === StatusOption.OnTheWay)) {
       res.status(409).json({
@@ -456,6 +461,8 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
       },
       notes,
     };
+
+    /* Update order. */
     const orderUpdated = await orderService.updateOrder(id, updates);
     
     res.status(200).json({
@@ -464,7 +471,8 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
       data: orderUpdated,
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
       msg: error.message,
@@ -475,6 +483,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
 const deleteOrder = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { id } = req.params;
 
+  /* Validate that order id be a valid id. */
   const validId = isAValidId(id);
   if (!validId) {
     res.status(400).json({
@@ -486,6 +495,7 @@ const deleteOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
   };
 
   try {
+    /* Validate if order doesn't exist. */
     const orderExists = await orderService.findOrderById(id);
     if (!orderExists) {
       res.status(404).json({
@@ -496,14 +506,16 @@ const deleteOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
       return;
     };
 
+    /* Delete order. */
     await orderService.deleteOrder(id);
-
+    
     res.status(200).json({
       status: ServerStatusMessage.DELETED,
       msg: "Order deleted successfully.",
     });
   } catch (error: any) {
-    console.log("Error: ", error.message);
+    console.log(`Error: ${error.message}`);
+    
     res.status(500).json({
       status: ServerStatusMessage.FAILED,
       msg: error.message,

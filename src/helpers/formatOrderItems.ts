@@ -37,7 +37,7 @@ export const formatOrderItems = async (items: NewOrderItem[]): Promise<OrderItem
           const toppingsId = item.toppings.map(toppingId => toppingId);
           toppingsFinded = await toppingService.findToppings({ _id: { $in: toppingsId } }) as ToppingDoc[];
           toppingsTotalPrice = toppingsFinded.reduce((prev: number, curr: Topping): number => prev += curr.price, 0);
-          toppings = toppingsFinded.map(topping => topping._id as string);
+          toppings = toppingsFinded.map(topping => topping._id.toString());
         };
 
         /* Set item quantity and calculate its total price. */
@@ -48,8 +48,8 @@ export const formatOrderItems = async (items: NewOrderItem[]): Promise<OrderItem
           : total = pizza.price * quantity;
         
         return {
-          pizza: pizza._id as string,
-          selectedSize: size._id as string,
+          pizza: pizza._id.toString(),
+          selectedSize: size._id.toString(),
           extra: {
             toppings,
             total: toppingsTotalPrice,
