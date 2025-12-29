@@ -1,6 +1,6 @@
 import { Order } from "@types";
 
-export interface SalesGrowthRateProps {
+export interface SalesGrowthRateArgs {
   currentMonthItems: Order[];
   lastMonthItems: Order[];
 };

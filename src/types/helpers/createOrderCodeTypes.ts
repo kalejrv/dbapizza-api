@@ -1,4 +1,4 @@
-export interface OrderCodeProps {
+export interface OrderCodeArgs {
   firstName: string;
   lastName: string;
 };
