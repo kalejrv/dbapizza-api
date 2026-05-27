@@ -2,7 +2,8 @@ import { Application, Request, Response } from "express";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express";
 
-const options: object = {
+type Options = Record<string, unknown>;
+const options: Options = {
   definition: {
     openapi: "3.0.0",
     info: {
