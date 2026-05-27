@@ -1,5 +1,5 @@
 import { Pagination, PaginationArgs, PaginationModel } from "@types";
-import queryModel from "./queryModel";
+import queryModel from "./query-model";
 
 export const pagination = async (paginationsArgs: PaginationArgs): Promise<Pagination> => {
   const { model, page, limit, skip } = paginationsArgs;

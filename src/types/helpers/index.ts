@@ -1,5 +1,5 @@
 export * from "./formatOrderItemsTypes";
-export * from "./paginationTypes";
-export * from "./calculateItemsGrowthRateTypes";
+export * from "./pagination-types";
+export * from "./calculate-items-growth-rate-types";
 export * from './calcultateSalesGrowthRateTypes';
 export * from "./createOrderCodeTypes";
