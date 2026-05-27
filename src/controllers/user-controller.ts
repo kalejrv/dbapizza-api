@@ -174,7 +174,7 @@ const findUserById = async (req: Request, res: Response<APIResponse>): Promise<v
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid User Id.",
     });
 
     return;
@@ -225,7 +225,7 @@ const createUser = async (req: Request, res: Response<APIResponse>): Promise<voi
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid role Id.",
+      msg: "Invalid User role Id.",
     });
 
     return;
@@ -248,7 +248,7 @@ const createUser = async (req: Request, res: Response<APIResponse>): Promise<voi
     if (!roleExists) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
-        msg: "Not user role found.",
+        msg: "Not Role requested found.",
       });
 
       return;
@@ -281,7 +281,7 @@ const updateUser = async (req: Request, res: Response<APIResponse>): Promise<voi
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid User Id.",
     });
 
     return;
@@ -354,7 +354,7 @@ const deleteUser = async (req: Request, res: Response<APIResponse>): Promise<voi
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "InvalidUser Id.",
     });
 
     return;
