@@ -10,15 +10,26 @@ const userService: IUserService = new UserService(userRepository);
 
 export const verifyUserAuth = async (req: Request, res: Response<APIResponse>, next: NextFunction): Promise<void> => {
   const { headers: { authorization } } = req;
-
-  /* Get token from request and verify it. */
-  const token = authorization?.split(" ")[1] as string;
-  const JWT_SECRET_KEY = config.jwt.secretKey as string;
-  const tokenVerified = verifyToken(token, JWT_SECRET_KEY) as TokenPayload;
-
+  
   try {
+    /* Validate that token exists. */
+    if (!authorization?.startsWith("Bearer ")) {
+      res.status(401).json({
+        status: ServerStatusMessage.UNAUTHORIZED,
+        msg: "Token not provided.",
+      });
+
+      return;
+    };
+
+    /* Verify that token be a valid token. */
+    const token = authorization?.split(" ")[1] as string;
+    const key = config.jwt.secretKey as string;
+    const tokenVerified = verifyToken(token, key) as TokenPayload;
+    
     /* Validate that user exists. */
-    const user = await userService.findUserById(tokenVerified.userId);
+    const { userId } = tokenVerified;
+    const user = await userService.findUserById(userId);
     if (!user) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,

@@ -1,4 +1,4 @@
 export * from "./is-a-valid-id";
 export * from "./createToken";
-export * from "./verifyToken";
+export * from "./verify-token";
 export * from "./isAValidNumber";

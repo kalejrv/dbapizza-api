@@ -9,20 +9,25 @@ export const checkUserPermissions = (req: Request, res: Response<APIResponse>, n
   const permission = permissions.find((permission: Permission): boolean => {
     return permission.method === Method[method as keyof typeof Method];
   });
-  const permissionAction = `${routePath}_${permission?.scope}`;
-
-  /* Add permission action to 'permission' array. */
-  if (permission?.actions && !permission.actions.includes(permissionAction)) {
-    permission.actions.push(permissionAction);
-  };
-
-  /* Compare user role permission actions with permission actions to know if role has permission to make action in the route. */
-  const rolePermissions = (userAuth.role as Role).permissions;
-  const permissionGranted = permission?.actions.find((action): boolean => {
-    return rolePermissions.includes(action);
-  });
   
   try {
+    /* Validate that exist a permission with same method that method from req. */
+    if (!permission) throw new Error("There isn't any permission founded.");
+    
+    /* Add a permission action to 'permission' variable. */
+    const permissionAction = `${routePath}_${permission.scope}`;
+    if (!permission.actions.includes(permissionAction)) {
+      permission.actions.push(permissionAction);
+    };
+
+    /* Validate that userAuth exists in Request object. */
+    if (!userAuth) throw new Error("User not authenticated.");
+
+    /* Compare user role permission actions with permission actions to know if role has permission to make action in the route. */
+    const userRolePermissions = (userAuth.role as Role).permissions;
+    const permissionGranted = permission.actions.find((action: string): boolean => {
+      return userRolePermissions.includes(action);
+    });
     if (!permissionGranted) {
       res.status(401).json({
         status: ServerStatusMessage.UNAUTHORIZED,
@@ -31,7 +36,7 @@ export const checkUserPermissions = (req: Request, res: Response<APIResponse>, n
       
       return;
     };
-
+    
     next();
   } catch (error: any) {
     console.log(`Error: ${error.message}`);
