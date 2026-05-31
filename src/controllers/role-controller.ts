@@ -42,7 +42,7 @@ const findRoleById = async (req: Request, res: Response<APIResponse>): Promise<v
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Role Id.",
     });
     
     return;
@@ -75,8 +75,8 @@ const findRoleById = async (req: Request, res: Response<APIResponse>): Promise<v
 };
 
 const createRole = async (req: Request, res: Response<APIResponse>): Promise<void> => {
-  const newRole: Role = req.body;
-  const { name, permissions } = newRole;
+  const role: Role = req.body;
+  const { name, permissions } = role;
 
   /* Validate role name. */
   if (!name || name.trim().length === 0)  {
@@ -111,12 +111,12 @@ const createRole = async (req: Request, res: Response<APIResponse>): Promise<voi
     };
 
     /* Create role and save it. */
-    const role = await roleService.createRole(newRole);
+    const newRole = await roleService.createRole(role);
 
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
       msg: "Role created successfully.",
-      data: role,
+      data: newRole,
     });
   } catch (error: any) {
     console.log(`Error: ${error.message}`);
@@ -139,7 +139,7 @@ const updateRole = async (req: Request, res: Response<APIResponse>): Promise<voi
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Role Id.",
     });
 
     return;
@@ -213,7 +213,7 @@ const deleteRole = async (req: Request, res: Response<APIResponse>): Promise<voi
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Role Id.",
     });
 
     return;
