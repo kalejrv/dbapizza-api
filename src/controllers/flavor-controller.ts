@@ -42,7 +42,7 @@ const findFlavorById = async (req: Request, res: Response<APIResponse>): Promise
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Flavor Id.",
     });
 
     return;
@@ -75,12 +75,12 @@ const findFlavorById = async (req: Request, res: Response<APIResponse>): Promise
 };
 
 const createFlavor = async (req: Request, res: Response<APIResponse>): Promise<void> => {
-  const newFlavor: Flavor = req.body;
-  const { name, description, price } = newFlavor;
+  const flavor: Flavor = req.body;
+  const { name, description, price } = flavor;
 
   /* Validate that values don't be empty values. */
-  for (const key in newFlavor) {
-    const value = newFlavor[key as keyof Flavor];
+  for (const key in flavor) {
+    const value = flavor[key as keyof Flavor];
 
     if ((typeof value === "string") && value.trim().length === 0) {
       res.status(400).json({
@@ -93,7 +93,7 @@ const createFlavor = async (req: Request, res: Response<APIResponse>): Promise<v
   };
 
   /* Validate that all Flavor values come in request. */
-  if ((Object.values(newFlavor).length === 0) || !name || !description || !price) {
+  if ((Object.values(flavor).length === 0) || !name || !description || !price) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
       msg: "All fields are required.",
@@ -114,16 +114,16 @@ const createFlavor = async (req: Request, res: Response<APIResponse>): Promise<v
       return;
     };
 
-    /* Create flavor record and save it. */
-    const flavor = await flavorService.createFlavor({
-      ...newFlavor,
+    /* Create flavor and save it. */
+    const newFlavor = await flavorService.createFlavor({
+      ...flavor,
       price: Number(price),
     });
     
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
       msg: "Flavor created successfully.",
-      data: flavor,
+      data: newFlavor,
     });
   } catch (error: any) {
     console.log(`Error: ${error.message}`);
@@ -144,9 +144,9 @@ const updateFlavor = async (req: Request, res: Response<APIResponse>): Promise<v
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Flavor Id.",
     });
-
+    
     return;
   };
 
@@ -223,12 +223,12 @@ const deleteFlavor = async (req: Request, res: Response<APIResponse>): Promise<v
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Flavor Id.",
     });
     
     return;
   };
-
+  
   try {
     /* Validate that if flavor don't exists isn't possible delete it. */
     const flavorExists = await flavorService.findFlavorById(id);

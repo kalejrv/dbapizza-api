@@ -1,6 +1,6 @@
 export * from "./role-repository";
 export * from "./user-repository";
-export * from "./flavorRepository";
+export * from "./flavor-repository";
 export * from "./toppingRepository";
 export * from "./sizeRepository";
 export * from "./pizzaRepository";
