@@ -1,6 +1,6 @@
 export * from "./role-service";
 export * from "./user-service";
-export * from "./flavorService";
+export * from "./flavor-service";
 export * from "./toppingService";
 export * from "./sizeService";
 export * from "./pizzaService";
