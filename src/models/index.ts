@@ -1,5 +1,5 @@
+export * from "./role-model";
 export * from "./user-model";
-export * from "./roleModel";
 export * from "./flavorModel";
 export * from "./toppingModel";
 export * from "./sizeModel";
