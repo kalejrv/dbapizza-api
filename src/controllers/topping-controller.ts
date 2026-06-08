@@ -27,7 +27,7 @@ const findToppings = async (req: Request, res: Response<APIResponse>): Promise<v
             totalItems: items.length,
           },
         });
-
+        
         return;
       };
 
@@ -50,7 +50,7 @@ const findToppings = async (req: Request, res: Response<APIResponse>): Promise<v
     if ((!page || (page < 0)) || (!limit || limit < 0)) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
-        msg: "Page and limit query params are required as valid number values.",
+        msg: "Page and Limit value must to be valid values.",
       });
 
       return;
@@ -104,7 +104,7 @@ const findToppingById = async (req: Request, res: Response<APIResponse>): Promis
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Topping Id.",
     });
 
     return;
@@ -137,12 +137,12 @@ const findToppingById = async (req: Request, res: Response<APIResponse>): Promis
 };
 
 const createTopping = async (req: Request, res: Response<APIResponse>): Promise<void> => {
-  const newTopping: Topping = req.body;
-  const { name, price } = newTopping;
+  const topping: Topping = req.body;
+  const { name, price } = topping;
 
   /* Validate that values from request don't be empty values. */
-  for (const key in newTopping) {
-    if (String(newTopping[key as keyof Topping]).trim().length === 0) {
+  for (const key in topping) {
+    if (String(topping[key as keyof Topping]).trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Fields can not be empty values.",
@@ -153,7 +153,7 @@ const createTopping = async (req: Request, res: Response<APIResponse>): Promise<
   };
   
   /* Validate that come all required values to create a new topping. */
-  if ((Object.values(newTopping).length === 0) || !name || !price) {
+  if ((Object.values(topping).length === 0) || !name || !price) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
       msg: "All fields are required.",
@@ -175,15 +175,15 @@ const createTopping = async (req: Request, res: Response<APIResponse>): Promise<
     };
     
     /* Create topping. */
-    const topping = await toppingService.createTopping({
-      ...newTopping,
+    const newTopping = await toppingService.createTopping({
+      ...topping,
       price: Number(price),
     });
     
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
       msg: "Topping created successfully.",
-      data: topping,
+      data: newTopping,
     });
   } catch (error: any) {
     console.log(`Error: ${error.message}`);
@@ -204,7 +204,7 @@ const updateTopping = async (req: Request, res: Response<APIResponse>): Promise<
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Topping Id.",
     });
 
     return;
@@ -283,7 +283,7 @@ const deleteTopping = async (req: Request, res: Response<APIResponse>): Promise<
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Topping Id.",
     });
 
     return;

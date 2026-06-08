@@ -2,7 +2,7 @@ export * from "./auth-routes";
 export * from "./role-routes";
 export * from "./user-routes";
 export * from "./flavor-routes";
-export * from "./toppingRoutes";
+export * from "./topping-routes";
 export * from "./sizeRoutes";
 export * from "./pizzaRoutes";
 export * from "./statusRoutes";
