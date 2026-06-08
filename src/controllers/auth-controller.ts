@@ -39,14 +39,14 @@ const signupUser = async (req: Request, res: Response<APIResponse>): Promise<voi
 
     /* Assign 'client' role to new user. */
     const clientRole = await roleService.findRoleByName("client") as RoleDoc;
-    const userRole = clientRole._id.toString();
+    const userClientRole = clientRole.id.toString();
 
     /* Create new user record. */
-    const user = await userService.createUser({ ...newUser, role: userRole }) as UserDoc;
+    const user = await userService.createUser({ ...newUser, role: userClientRole }) as UserDoc;
     const { firstName, lastName, address, phone, email, role } = user;
     
     /* Create user session token. */
-    const payload: TokenPayload = { userId: user._id.toString() };
+    const payload: TokenPayload = { userId: user.id.toString() };
     const token = createToken(payload);
     
     res.status(201).json({
@@ -112,7 +112,7 @@ const signinUser = async (req: Request, res: Response<APIResponse>): Promise<voi
     
     /* Create user session token. */
     const { firstName, lastName, address, phone, role } = userExists;
-    const payload: TokenPayload = { userId: userExists._id.toString() };
+    const payload: TokenPayload = { userId: userExists.id.toString() };
     const token = createToken(payload);
 
     res.status(200).json({
