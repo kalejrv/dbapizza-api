@@ -2,7 +2,7 @@ export * from "./auth-controller";
 export * from "./role-controller";
 export * from "./user-controller";
 export * from "./flavor-controller";
-export * from "./toppingController";
+export * from "./topping-controller";
 export * from "./sizeController";
 export * from "./pizzaController";
 export * from "./statusController";
