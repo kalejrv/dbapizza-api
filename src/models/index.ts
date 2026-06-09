@@ -4,5 +4,5 @@ export * from "./flavor-model";
 export * from "./topping-model";
 export * from "./size-model";
 export * from "./status-model";
-export * from "./pizzaModel";
+export * from "./pizza-model";
 export * from "./orderModel";

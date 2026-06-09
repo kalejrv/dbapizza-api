@@ -5,5 +5,5 @@ export * from "./flavor-controller";
 export * from "./topping-controller";
 export * from "./size-controller";
 export * from "./status-controller";
-export * from "./pizzaController";
+export * from "./pizza-controller";
 export * from "./orderController";
