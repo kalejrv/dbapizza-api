@@ -5,3 +5,4 @@ export * from "./repository-types";
 export * from "./api-response-types";
 export * from "./permissions-types";
 export * from "./utils-types";
+export * from "./multer-types";
