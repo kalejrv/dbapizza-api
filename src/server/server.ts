@@ -23,8 +23,8 @@ app.use(`${v1Api}`, /* Set app routing. */
   flavorRoutes(),
   toppingRoutes(),
   sizeRoutes(),
-  pizzaRoutes(),
   statusRoutes(),
+  pizzaRoutes(),
   orderRoutes(),
 );
 
