@@ -42,7 +42,7 @@ const findStatusById = async (req: Request, res: Response<APIResponse>): Promise
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Status Id.",
     });
 
     return;
@@ -75,12 +75,12 @@ const findStatusById = async (req: Request, res: Response<APIResponse>): Promise
 };
 
 const createStatus = async (req: Request, res: Response<APIResponse>): Promise<void> => {
-  const newStatus: Status = req.body;
-  const { name, description } = newStatus;
+  const status: Status = req.body;
+  const { name, description } = status;
   
   /* Validate that all status values don't be empty values. */
-  for (const key in newStatus) {
-    if (newStatus[key as keyof Status].trim().length === 0) {
+  for (const key in status) {
+    if (status[key as keyof Status].trim().length === 0) {
       res.status(400).json({
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Fields can not to be empty values.",
@@ -91,7 +91,7 @@ const createStatus = async (req: Request, res: Response<APIResponse>): Promise<v
   };
 
   /* Validate that all status values be required. */
-  if ((Object.values(newStatus).length === 0) || !name || !description) {
+  if ((Object.values(status).length === 0) || !name || !description) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
       msg: "All fields are required.",
@@ -112,7 +112,7 @@ const createStatus = async (req: Request, res: Response<APIResponse>): Promise<v
 
     return;
   };
-
+  
   try {
     /* Validate that if status exists don't create it again. */
     const statusExists = await statusService.findStatusByName(name);  
@@ -126,12 +126,12 @@ const createStatus = async (req: Request, res: Response<APIResponse>): Promise<v
     };
 
     /* Create status. */
-    const status = await statusService.createStatus(newStatus);
-
+    const newStatus = await statusService.createStatus(status);
+    
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
       msg: "Status created successfully.",
-      data: status,
+      data: newStatus,
     });
   } catch (error: any) {
     console.log(`Error: ${error.message}`);
@@ -152,12 +152,12 @@ const updateStatus = async (req: Request, res: Response<APIResponse>): Promise<v
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Status Id.",
     });
     
     return;
   };
-  
+
   /* Validate that updates don't be empty values. */
   for (const key in updates) {
     if ((updates[key as keyof Status] as string).trim().length === 0) {
@@ -204,7 +204,7 @@ const updateStatus = async (req: Request, res: Response<APIResponse>): Promise<v
 
     /* Update status. */
     const statusUpdated = await statusService.updateStatus(id, updates);
-
+    
     res.status(200).json({
       status: ServerStatusMessage.UPDATED,
       msg: "Status updated successfully.",
@@ -228,7 +228,7 @@ const deleteStatus = async (req: Request, res: Response<APIResponse>): Promise<v
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Status Id.",
     });
 
     return;

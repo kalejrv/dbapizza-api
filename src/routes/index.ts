@@ -4,6 +4,6 @@ export * from "./user-routes";
 export * from "./flavor-routes";
 export * from "./topping-routes";
 export * from "./size-routes";
+export * from "./status-routes";
 export * from "./pizzaRoutes";
-export * from "./statusRoutes";
 export * from "./orderRoutes";
