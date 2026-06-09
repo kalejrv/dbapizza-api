@@ -2,6 +2,7 @@ import express, { Application } from "express";
 import morgan from "morgan";
 import cors from "cors";
 import config from "@config/config";
+import { errorHandler } from "@errors";
 import { authRouter, flavorRoutes, orderRoutes, pizzaRoutes, roleRoutes, sizeRoutes, statusRoutes, toppingRoutes, userRoutes } from "@routes";
 
 const app: Application = express();
@@ -27,5 +28,7 @@ app.use(`${v1Api}`, /* Set app routing. */
   pizzaRoutes(),
   orderRoutes(),
 );
+
+app.use(errorHandler)/* Use a global error handler. */
 
 export default app;
