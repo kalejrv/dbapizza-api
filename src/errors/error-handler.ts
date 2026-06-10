@@ -1,6 +1,6 @@
 import { APIResponse, MYMETYPES, ServerStatusMessage } from "@types";
 import { NextFunction, Request, Response } from "express";
-import { MulterError } from "./";
+import { MulterError, NotFoundError } from "./";
 
 export const errorHandler = (error: Error, _req: Request, res: Response<APIResponse>, _next: NextFunction): void => { 
   /* Validate if error is a Multer error. */
@@ -17,6 +17,14 @@ export const errorHandler = (error: Error, _req: Request, res: Response<APIRespo
     });
 
     return;
+  };
+
+  /* Validate if error is a DB error. */
+  if (error instanceof NotFoundError) {
+    res.status(404).json({
+      status: ServerStatusMessage.NOT_FOUND,
+      msg: "Requested record wasn't found.",
+    });
   };
   
   res.status(500).json({

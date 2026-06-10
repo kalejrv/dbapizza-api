@@ -6,4 +6,4 @@ export * from "./topping-controller";
 export * from "./size-controller";
 export * from "./status-controller";
 export * from "./pizza-controller";
-export * from "./orderController";
+export * from "./order-controller";
