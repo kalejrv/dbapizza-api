@@ -1,7 +1,8 @@
 import { PizzaRepository, SizeRepository, ToppingRepository } from "@repositories";
 import { PizzaService, SizeService, ToppingService } from "@services";
 import { IPizzaRepository, IPizzaService, ISizeRepository, ISizeService, IToppingRepository, IToppingService, OrderItem, NewOrderItem, PizzaDoc, Topping, ToppingDoc, SizeDoc } from "@types";
-import { calculatePizzaPrice } from "./calculatePizzaPrice";
+import { calculatePizzaPrice } from "./";
+import { NotFoundError } from "@errors";
 
 const pizzaRepository: IPizzaRepository = new PizzaRepository;
 const pizzaService: IPizzaService = new PizzaService(pizzaRepository);
@@ -23,7 +24,7 @@ export const formatOrderItems = async (items: NewOrderItem[]): Promise<OrderItem
         ]);
         
         /* Validate if pizza or size don't exists. */
-        if (!pizzaExists || !sizeExists) throw new Error(`Pizza or Size were not found.`);
+        if (!pizzaExists || !sizeExists) throw new NotFoundError("-"); // "-" is a temporal message because is managed by a global error handler.
         
         /* Calculate pizza total price. */
         const size = sizeExists as SizeDoc;
@@ -37,7 +38,7 @@ export const formatOrderItems = async (items: NewOrderItem[]): Promise<OrderItem
           const toppingsId = item.toppings.map(toppingId => toppingId);
           toppingsFinded = await toppingService.findToppings({ _id: { $in: toppingsId } }) as ToppingDoc[];
           toppingsTotalPrice = toppingsFinded.reduce((prev: number, curr: Topping): number => prev += curr.price, 0);
-          toppings = toppingsFinded.map(topping => topping._id.toString());
+          toppings = toppingsFinded.map(topping => topping._id as string);
         };
 
         /* Set item quantity and calculate its total price. */
@@ -48,8 +49,8 @@ export const formatOrderItems = async (items: NewOrderItem[]): Promise<OrderItem
           : total = pizza.price * quantity;
         
         return {
-          pizza: pizza._id.toString(),
-          selectedSize: size._id.toString(),
+          pizza: pizza._id as string,
+          selectedSize: size._id as string,
           extra: {
             toppings,
             total: toppingsTotalPrice,

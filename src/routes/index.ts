@@ -6,4 +6,4 @@ export * from "./topping-routes";
 export * from "./size-routes";
 export * from "./status-routes";
 export * from "./pizza-routes";
-export * from "./orderRoutes";
+export * from "./order-routes";

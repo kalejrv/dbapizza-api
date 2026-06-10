@@ -5,4 +5,4 @@ export * from "./topping-model";
 export * from "./size-model";
 export * from "./status-model";
 export * from "./pizza-model";
-export * from "./orderModel";
+export * from "./order-model";

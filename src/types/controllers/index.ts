@@ -1,3 +1,3 @@
 export * from "./auth-controller-types";
-export * from "./orderControllerTypes";
-export * from "./pizzaControllerTypes";
+export * from "./pizza-controller-types";
+export * from "./order-controller-types";
