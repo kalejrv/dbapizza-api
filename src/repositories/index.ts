@@ -5,4 +5,4 @@ export * from "./topping-repository";
 export * from "./size-repository";
 export * from "./status-repository";
 export * from "./pizza-repository";
-export * from "./orderRepository";
+export * from "./order-repository";

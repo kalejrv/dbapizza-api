@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { addNewStatusHistory, calculateItemsGrowthRate, calculateSalesGrowthRate, calculateTotalOrder, createOrderCode, formatOrderItems, pagination } from "@helpers";
 import { OrderRepository, StatusRepository } from "@repositories";
 import { OrderService, StatusService } from "@services";
-import { APIResponse, DeliveryType, IOrderRepository, IOrderService, IStatusRepository, IStatusService, NewOrder, NewOrderItem, Order, OrderCode, OrderDelivery, OrderItem, OrderStatusHistory, OrderUpdates, OrderUser, PaginationModel, ServerStatusMessage, Status, StatusDoc, StatusOption } from "@types";
+import { APIResponse, DeliveryType, IOrderRepository, IOrderService, IStatusRepository, IStatusService, NewOrder, NewOrderItem, Order, OrderCode, OrderDelivery, OrderItem, OrderStatusHistory, OrderUpdates, OrderUser, PaginationModel, ServerStatusMessage, Status, StatusDoc, StatusOption, User } from "@types";
 import { isAValidId } from "@utils";
 
 const orderRepository: IOrderRepository = new OrderRepository;
@@ -24,7 +24,7 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
       if (items.length === 0) {
         res.status(200).json({
           status: ServerStatusMessage.OK,
-          msg: "No orders found.",
+          msg: "No orders yet.",
           data: {
             items,
             totalItems: items.length,
@@ -55,7 +55,7 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
         status: ServerStatusMessage.BAD_REQUEST,
         msg: "Page and limit query params are required as valid number values.",
       });
-
+      
       return;
     };
     
@@ -68,6 +68,7 @@ const findOrders = async (req: Request, res: Response<APIResponse>): Promise<voi
     if (items.length === 0) {
       res.status(200).json({
         status: ServerStatusMessage.OK,
+        msg: "No orders yet.",
         data: {
           items,
           totalItems: items.length,
@@ -191,7 +192,7 @@ const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Order Id.",
     });
 
     return;
@@ -225,15 +226,15 @@ const findOrderById = async (req: Request, res: Response<APIResponse>): Promise<
 
 const createOrder = async (req: Request, res: Response<APIResponse>): Promise<void> => {
   const { userAuth, body } = req;
-  const { firstName, lastName, address, phone, email } = userAuth;
-  const newOrder: NewOrder = body;
-  const { items, deliveryType, notes } = newOrder;
+  const { firstName, lastName, address, phone, email } = userAuth as User;
+  const order: NewOrder = body;
+  const { items, deliveryType, notes } = order;
   
   /* Validate that order don't come with falsy values. */
-  for (const key in newOrder) {
+  for (const key in order) {
     if (key === 'notes') continue;
 
-    const value = newOrder[key as keyof NewOrder];
+    const value = order[key as keyof NewOrder];
 
     if ((typeof value === 'string') || Array.isArray(value)) {
       if (value.length === 0) {
@@ -289,12 +290,12 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     const user: OrderUser = { firstName, lastName, address, phone, email };
     const orderItems: OrderItem[] = await formatOrderItems(items);
     const delivery: OrderDelivery = { type: deliveryType, estimatedTime: 20 };
-    const status: string = statusExists._id.toString();
+    const status: string = statusExists._id as string;
     const statusHistory: OrderStatusHistory[] = [addNewStatusHistory(statusExists)];
     const total: number = calculateTotalOrder(orderItems);
 
     /* Create order. */
-    const orderCreated: Order = await orderService.createOrder({
+    const newOrder: Order = await orderService.createOrder({
       code,
       user,
       items: orderItems,
@@ -308,7 +309,7 @@ const createOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     res.status(201).json({
       status: ServerStatusMessage.CREATED,
       msg: "Order created successfully.",
-      data: orderCreated,
+      data: newOrder,
     });
   } catch (error: any) {
     console.log(`Error: ${error.message}`);
@@ -324,13 +325,13 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
   const { body, params } = req;
   const { status, deliveryType, notes }: OrderUpdates = body;
   const { id } = params;
-
+  
   /* Validate that order id be a valid id. */
   const validOrderId = isAValidId(id);
   if (!validOrderId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid order Id.",
+      msg: "Invalid Order Id.",
     });
 
     return;
@@ -356,7 +357,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     return;
   };
 
-  /* Validate if notes come in updates dont't different of a string. */
+  /* Validate if notes come in updates don't be different of a string. */
   if (("notes" in body) && (typeof notes !== "string") || (notes?.length === 0)) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
@@ -371,14 +372,14 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
   if (("status" in body) && !validStatusId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Status should be a valid Status id.",
+      msg: "Invalid Status id.",
     });
 
     return;
   };
 
   try {
-    /* Validate if order doesn't exist. */
+    /* Validate if order doesn't exist isn't possible to update it. */
     const orderExists = await orderService.findOrderById(id);
     if (!orderExists) {
       res.status(404).json({
@@ -389,9 +390,9 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
       return;
     };
     
-    /* Validate if status doesn't exist. */
+    /* Validate if status doesn't exist ins't possible to update the order. */
     const currentOrderStatus = (orderExists.status as StatusDoc);
-    const newOrderStatus = await statusService.findStatusById( status as string ?? currentOrderStatus._id.toString());
+    const newOrderStatus = await statusService.findStatusById( status as string ?? currentOrderStatus._id as string);
     if (!newOrderStatus) {
       res.status(404).json({
         status: ServerStatusMessage.NOT_FOUND,
@@ -435,7 +436,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
     if (status && (newOrderStatus.name !== StatusOption.Delivered) && (currentOrderStatus.name === StatusOption.OnTheWay)) {
       res.status(409).json({
         status: ServerStatusMessage.CONFLICT,
-        msg: `Status only can be set to '${StatusOption.Delivered}' because the current order status is '${StatusOption.OnTheWay}'.`,
+        msg: `Order status only can be set to '${StatusOption.Delivered}' because the order is '${StatusOption.OnTheWay}'.`,
       });
 
       return;
@@ -461,7 +462,7 @@ const updateOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
       },
       notes,
     };
-
+    
     /* Update order. */
     const orderUpdated = await orderService.updateOrder(id, updates);
     
@@ -488,14 +489,14 @@ const deleteOrder = async (req: Request, res: Response<APIResponse>): Promise<vo
   if (!validId) {
     res.status(400).json({
       status: ServerStatusMessage.BAD_REQUEST,
-      msg: "Invalid Id.",
+      msg: "Invalid Order Id.",
     });
 
     return;
   };
 
   try {
-    /* Validate if order doesn't exist. */
+    /* Validate if order doesn't exist isn't possible to delete it. */
     const orderExists = await orderService.findOrderById(id);
     if (!orderExists) {
       res.status(404).json({

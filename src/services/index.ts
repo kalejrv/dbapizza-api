@@ -5,4 +5,4 @@ export * from "./topping-service";
 export * from "./size-service";
 export * from "./status-service";
 export * from "./pizza-service";
-export * from "./orderService";
+export * from "./order-service";
